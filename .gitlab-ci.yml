@@ -1,0 +1,29 @@
+stages:
+  - build
+  - deploy
+
+variables:
+  IMAGE: "$CI_REGISTRY_IMAGE:latest"
+
+build_backend:
+  stage: build
+  image: docker:24
+  services:
+    - docker:24-dind
+  script:
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker build -t $IMAGE ./backend
+    - docker push $IMAGE
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+
+# Deploy stage intentionally minimal for the sandbox phase.
+# Phase 1: add a deploy job that pushes to Lightsail.
+deploy_sandbox:
+  stage: deploy
+  image: alpine:3.20
+  script:
+    - echo "Sandbox deploy: compose stack runs on Proxmox LXC 192.168.1.28 (managed manually for now)."
+    - echo "CI build verified; manual `docker compose up` on tregocon host."
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'

@@ -1,0 +1,14 @@
+# Sandbox: serve on LAN IP:8080, no TLS (internal only).
+# Phase 1 (Lightsail): replace with play.tregocon.games + TLS.
+{
+    admin off
+    auto_https off
+}
+
+:8080 {
+    # API
+    reverse_proxy /api/* backend:8000
+
+    # Frontend SPA
+    reverse_proxy frontend:80
+}
