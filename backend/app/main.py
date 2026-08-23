@@ -4,8 +4,9 @@ from sqlalchemy.orm import Session
 
 from .db import get_db, init_db, engine
 from .models import Event, MealOption
+from . import auth
 
-app = FastAPI(title="TregoCon API", version="0.2.0")
+app = FastAPI(title="TregoCon API", version="0.3.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -15,7 +16,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Create tables on startup (sandbox/MVP).
+app.include_router(auth.router)
+
+
 @app.on_event("startup")
 def on_startup():
     init_db()
@@ -23,7 +26,7 @@ def on_startup():
 
 @app.get("/api/health")
 def health():
-    return {"status": "ok", "service": "tregocon-api", "version": "0.2.0"}
+    return {"status": "ok", "service": "tregocon-api", "version": "0.3.0"}
 
 
 @app.get("/api/db/health")

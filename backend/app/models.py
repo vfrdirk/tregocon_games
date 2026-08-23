@@ -195,3 +195,13 @@ class Photo(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     url = Column(String, nullable=False)
     caption = Column(String)
+
+
+class Session(Base):
+    __tablename__ = "sessions"
+    id = Column(Integer, primary_key=True)
+    token = Column(String, nullable=False, unique=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    expires_at = Column(DateTime, nullable=True)
+    user = relationship("User")
