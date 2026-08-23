@@ -1,6 +1,13 @@
+# Sandbox compose for Docker-in-LXC (Proxmox).
+# Uses network_mode: host because docker-proxy port publishing is unreliable
+# inside an unprivileged LXC. Each service binds a distinct host port;
+# Caddy (8080) proxies to backend (8000) and frontend (8081) via 127.0.0.1.
+# Phase 1 (Lightsail): revert to bridge networking + Caddy TLS.
+
 services:
   postgres:
     image: postgres:16-alpine
+    network_mode: host
     environment:
       POSTGRES_USER: tregocon
       POSTGRES_PASSWORD: tregocon_dev
@@ -15,28 +22,22 @@ services:
 
   backend:
     build: ./backend
+    network_mode: host
     environment:
-      DATABASE_URL: postgresql://tregocon:tregocon_dev@postgres:5432/tregocon
+      DATABASE_URL: postgresql://tregocon:tregocon_dev@127.0.0.1:5432/tregocon
     depends_on:
       postgres:
         condition: service_healthy
-    expose:
-      - "8000"
 
   frontend:
     build: ./frontend
-    expose:
-      - "80"
+    network_mode: host
 
   caddy:
     image: caddy:2-alpine
-    ports:
-      - "8080:80"
+    network_mode: host
     volumes:
       - ./Caddyfile:/etc/caddy/Caddyfile:ro
-    depends_on:
-      - frontend
-      - backend
 
 volumes:
   pgdata:

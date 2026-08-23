@@ -6,9 +6,9 @@
 }
 
 :8080 {
-    # API
-    reverse_proxy /api/* backend:8000
+    # API -> backend (host networking, port 8000)
+    reverse_proxy /api/* 127.0.0.1:8000
 
-    # Frontend SPA
-    reverse_proxy frontend:80
+    # Frontend SPA (host networking, nginx on 8081)
+    reverse_proxy 127.0.0.1:8081
 }
