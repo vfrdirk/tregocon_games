@@ -45,7 +45,9 @@ def event_status(db: DBSession = Depends(get_db)):
     if not ev:
         return {"event": None, "state": "no_event"}
     return {
-        "event": {"id": ev.id, "year": ev.year, "name": ev.name,
+        "event": {"id": ev.id, "year": ev.year, "name": ev.name, "resort_name": ev.resort_name,
+                  "event_start": ev.event_start.isoformat() if ev.event_start else None,
+                  "event_end": ev.event_end.isoformat() if ev.event_end else None,
                   "opens_at": ev.registration_opens_at.isoformat() if ev.registration_opens_at else None,
                   "closes_at": ev.registration_closes_at.isoformat() if ev.registration_closes_at else None},
         "state": registration_state(ev),

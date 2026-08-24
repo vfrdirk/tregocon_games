@@ -151,7 +151,9 @@ def availability(db: DBSession = Depends(get_db)):
             })
         out.append({"id": lg.id, "name": lg.name, "description": lg.description, "rooms": rooms})
     return {
-        "event": {"id": ev.id, "year": ev.year, "name": ev.name,
+        "event": {"id": ev.id, "year": ev.year, "name": ev.name, "resort_name": ev.resort_name,
+                  "event_start": ev.event_start.isoformat() if ev.event_start else None,
+                  "event_end": ev.event_end.isoformat() if ev.event_end else None,
                   "opens_at": ev.registration_opens_at.isoformat() if ev.registration_opens_at else None,
                   "rate_per_night_cents": rate},
         "lodges": out,

@@ -98,6 +98,14 @@ button.accent { background:var(--accent); color:#0d1626; border-color:var(--acce
 .mealadmin input { font-weight:600; }
 .mealvol { margin:.4rem 0; }
 .mealvol ul { margin:.2rem 0; padding-left:1.1rem; }
+.event-banner { background:linear-gradient(135deg,#1f2c4d,#26406b); border:1px solid #34507f; border-radius:12px; padding:1rem 1.2rem; margin:1rem auto; max-width:520px; text-align:center; box-shadow:0 4px 18px rgba(0,0,0,.35); }
+.event-banner h2 { margin:0 0 .2rem; font-size:1.6rem; }
+.event-banner .resort { margin:0 0 .3rem; color:#9fb6d8; }
+.event-banner .dates { margin:.3rem 0; font-size:1.1rem; font-weight:600; }
+.event-banner .open { color:#7ee0a0; font-weight:600; }
+.event-banner .soon { color:#ffd479; }
+.event-banner .closed { color:#ff9a9a; }
+.event-dates { font-size:1.05rem; font-weight:600; margin:.1rem 0 .5rem; }
 
 /* ===== Mobile + visual polish ===== */
 header { background:linear-gradient(90deg,#19233c,#26406b); box-shadow:0 2px 10px rgba(0,0,0,.35); position:sticky; top:0; z-index:20; }

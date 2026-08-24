@@ -55,6 +55,9 @@ export default function Lodging() {
   return (
     <div>
       <h2>Lodging — {data.event?.name}</h2>
+      {(data.event?.event_start || data.event?.event_end) && (
+        <p className="event-dates">📅 {data.event.event_start ? new Date(data.event.event_start).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '?'} – {data.event.event_end ? new Date(data.event.event_end).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '?'}</p>
+      )}
       <p className="muted">{money(rate)} / person / night · no discounts · companions billed same as a person</p>
       {mine && (
         <div className="card">

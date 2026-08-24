@@ -9,8 +9,33 @@ import Announcements from './views/Announcements.jsx';
 import Photos from './views/Photos.jsx';
 import Admin from './views/Admin.jsx';
 
+function fmtDate(iso) {
+  if (!iso) return null;
+  const d = new Date(iso);
+  return d.toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' });
+}
+
+function EventBanner({ ev, state }) {
+  const start = fmtDate(ev.event_start);
+  const end = fmtDate(ev.event_end);
+  const regOpen = fmtDate(ev.opens_at);
+  const regClose = fmtDate(ev.closes_at);
+  return (
+    <div className="event-banner">
+      <h2>{ev.name}{ev.year ? ` ${ev.year}` : ''}</h2>
+      {ev.resort_name && <p className="resort">{ev.resort_name}</p>}
+      {start && end && <p className="dates">📅 {start} – {end}</p>}
+      {state === 'open' && <p className="open">Registration is open{regClose ? ` until ${regClose}` : ''}.</p>}
+      {state === 'before' && regOpen && <p className="soon">Registration opens {regOpen}.</p>}
+      {state === 'closed' && <p className="closed">Registration is closed.</p>}
+      {state === 'no_event' && <p className="soon">No event scheduled yet.</p>}
+    </div>
+  );
+}
+
 export default function App() {
   const [user, setUser] = useState(null);
+  const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('lodging');
 
@@ -26,7 +51,11 @@ export default function App() {
     }
   }, []);
 
-  useEffect(() => { refreshMe(); }, [refreshMe]);
+  const loadStatus = useCallback(async () => {
+    try { setStatus(await api('/api/event/status')); } catch { setStatus(null); }
+  }, []);
+
+  useEffect(() => { refreshMe(); loadStatus(); }, [refreshMe, loadStatus]);
 
   const logout = async () => { await api('/api/auth/logout', { method: 'POST' }); setUser(null); setView('lodging'); };
 
@@ -35,6 +64,7 @@ export default function App() {
   if (!user) {
     return (
       <div className="authwrap">
+        {status && status.event && <EventBanner ev={status.event} state={status.state} />}
         <Login onLogin={refreshMe} />
         <Register />
       </div>
