@@ -8,17 +8,31 @@ export default function Admin() {
   const [comms, setComms] = useState(null);
   const [cfg, setCfg] = useState({ lodging_rate_per_night_cents: 5000, meal_price_per_service_cents: 0 });
   const [nextYear, setNextYear] = useState(new Date().getFullYear() + 1);
+  const [rooms, setRooms] = useState([]);
+  const [roomEdits, setRoomEdits] = useState({});
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
   const loadDash = async () => { try { setDash((await api('/api/admin/dashboard')).lodging); } catch (e) { setErr(e.message); } };
   const loadUsers = async () => { try { setUsers((await api('/api/admin/users')).users); } catch (e) { setErr(e.message); } };
   const loadComms = async () => { try { setComms(await api('/api/admin/event/comms-status')); } catch (e) { setErr(e.message); } };
+  const loadRooms = async () => {
+    try {
+      const d = await api('/api/lodging/availability');
+      const flat = [];
+      for (const lg of d.lodges) for (const r of lg.rooms) flat.push(r);
+      setRooms(flat);
+      const init = {};
+      for (const r of flat) init[r.id] = { label: r.label, floor: r.floor, bed_config: r.bed_config };
+      setRoomEdits(init);
+    } catch (e) { setErr(e.message); }
+  };
 
   useEffect(() => {
     if (tab === 'dashboard') loadDash();
     if (tab === 'users') loadUsers();
     if (tab === 'comms') loadComms();
+    if (tab === 'rooms') loadRooms();
   }, [tab]);
 
   const setStatus = async (id, status) => { try { await api(`/api/admin/users/${id}`, { method: 'POST', body: { status } }); await loadUsers(); } catch (e) { setErr(e.message); } };
@@ -27,12 +41,20 @@ export default function Admin() {
     try { const r = await api('/api/admin/event/create-next', { method: 'POST', body: { year: nextYear } }); setMsg(r.message); }
     catch (e) { setErr(e.message); }
   };
+  const saveRoom = async (id) => {
+    try {
+      const e = roomEdits[id];
+      await api(`/api/admin/room/${id}`, { method: 'PATCH', body: e });
+      setMsg(`Saved "${e.label}"`);
+      await loadRooms();
+    } catch (er) { setErr(er.message); }
+  };
 
   return (
     <div>
       <h2>Admin</h2>
       <nav className="subnav">
-        {['dashboard', 'users', 'config', 'comms'].map((t) => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}
+        {['dashboard', 'users', 'rooms', 'config', 'comms'].map((t) => <button key={t} className={tab === t ? 'active' : ''} onClick={() => setTab(t)}>{t}</button>)}
       </nav>
       {msg && <p className="ok">{msg}</p>}
       {err && <p className="err">{err}</p>}
@@ -75,6 +97,28 @@ export default function Admin() {
           <h3>Next event</h3>
           <label>Year<input type="number" value={nextYear} onChange={(e) => setNextYear(+e.target.value)} /></label>
           <button onClick={createNext}>Create next event (copy template)</button>
+        </div>
+      )}
+
+      {tab === 'rooms' && (
+        <div className="card">
+          <h3>Rooms (rename / relabel live)</h3>
+          <p className="muted">Edit a room's name or floor and Save. No redeploy needed.</p>
+          {rooms.map((r) => (
+            <div key={r.id} className="roomedit">
+              <input value={roomEdits[r.id]?.label || ''} onChange={(e) => setRoomEdits({ ...roomEdits, [r.id]: { ...roomEdits[r.id], label: e.target.value } })} />
+              <select value={roomEdits[r.id]?.floor || 'main'} onChange={(e) => setRoomEdits({ ...roomEdits, [r.id]: { ...roomEdits[r.id], floor: e.target.value } })}>
+                <option value="upstairs">Upstairs</option>
+                <option value="main">Main</option>
+                <option value="down">Down</option>
+              </select>
+              <select value={roomEdits[r.id]?.bed_config || 'double'} onChange={(e) => setRoomEdits({ ...roomEdits, [r.id]: { ...roomEdits[r.id], bed_config: e.target.value } })}>
+                <option value="double">2 beds</option>
+                <option value="single">Queen</option>
+              </select>
+              <button onClick={() => saveRoom(r.id)}>Save</button>
+            </div>
+          ))}
         </div>
       )}
 

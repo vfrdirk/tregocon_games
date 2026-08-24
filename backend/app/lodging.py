@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session as DBSession
 from .db import get_db
 from .models import (
     Event, Lodge, Room, User, UserStatus, Reservation,
-    CommitmentStatus, PaymentStatus,
+    CommitmentStatus, PaymentStatus, BedConfig,
 )
 from .auth import get_current_user
 
@@ -114,6 +114,14 @@ class RoomIn(BaseModel):
     floor: str = "main"  # upstairs | main | down
     capacity: int = 2
     bed_config: str = "double"  # single | double
+    notes: str = None
+
+
+class RoomUpdate(BaseModel):
+    label: str = None
+    floor: str = None
+    capacity: int = None
+    bed_config: str = None
     notes: str = None
 
 
@@ -253,3 +261,24 @@ def create_room(payload: RoomIn, user: User = Depends(get_current_user), db: DBS
     db.add(r)
     db.commit()
     return {"status": "ok", "room_id": r.id}
+
+
+@admin_router.patch("/room/{room_id}")
+def update_room(room_id: int, payload: RoomUpdate, user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    r = db.query(Room).filter(Room.id == room_id).first()
+    if not r:
+        raise HTTPException(status_code=404, detail="Room not found")
+    if payload.label is not None:
+        r.label = payload.label
+    if payload.floor is not None:
+        r.floor = payload.floor
+    if payload.capacity is not None:
+        r.capacity = payload.capacity
+    if payload.bed_config is not None:
+        r.bed_config = BedConfig(payload.bed_config)
+    if payload.notes is not None:
+        r.notes = payload.notes
+    db.commit()
+    return {"status": "ok", "room_id": r.id, "label": r.label}
