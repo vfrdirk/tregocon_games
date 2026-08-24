@@ -183,13 +183,7 @@ def update_me(payload: ProfileIn, user: User = Depends(get_current_user), db: DB
 UPLOAD_DIR = "/app/uploads"
 
 
-@router.delete("/me")
-def delete_me(user: User = Depends(get_current_user), db: DBSession = Depends(get_db), response: Response = None):
-    # Protect against locking everyone out: admins must be removed via the admin panel.
-    if user.status == UserStatus.admin:
-        raise HTTPException(status_code=400, detail="Admin accounts cannot self-delete. Remove via admin panel.")
-    uid = user.id
-    # Remove uploaded photo files + rows
+def _delete_user_cascade(db: DBSession, uid: int):
     photos = db.query(Photo).filter(Photo.uploaded_by == uid).all()
     for p in photos:
         try:
@@ -205,6 +199,31 @@ def delete_me(user: User = Depends(get_current_user), db: DBSession = Depends(ge
     db.query(Reservation).filter(Reservation.user_id == uid).delete()
     db.query(Session).filter(Session.user_id == uid).delete()
     db.query(User).filter(User.id == uid).delete()
+
+
+@router.delete("/me")
+def delete_me(user: User = Depends(get_current_user), db: DBSession = Depends(get_db), response: Response = None):
+    # Protect against locking everyone out: admins must be removed via the admin panel.
+    if user.status == UserStatus.admin:
+        raise HTTPException(status_code=400, detail="Admin accounts cannot self-delete. Remove via admin panel.")
+    _delete_user_cascade(db, user.id)
+    db.commit()
+    return {"status": "ok"}
+
+
+@router.delete("/users/{user_id}")
+def admin_delete_user(user_id: int, user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    target = db.query(User).filter(User.id == user_id).first()
+    if not target:
+        raise HTTPException(status_code=404, detail="User not found")
+    # Never let an admin delete themselves through this path (use self-delete after demoting, or keep at least one admin)
+    if target.status == UserStatus.admin:
+        admins = db.query(User).filter(User.status == UserStatus.admin).count()
+        if admins <= 1:
+            raise HTTPException(status_code=400, detail="Cannot delete the last admin account")
+    _delete_user_cascade(db, user_id)
     db.commit()
     return {"status": "ok"}
 

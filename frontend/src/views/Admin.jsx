@@ -94,6 +94,10 @@ export default function Admin() {
   }, [tab]);
 
   const setStatus = async (id, status) => { try { await api(`/api/admin/users/${id}`, { method: 'POST', body: { status } }); await loadUsers(); } catch (e) { setErr(e.message); } };
+  const delUser = async (id) => {
+    if (!window.confirm('Delete this user? Removes their profile, reservations, and uploaded photos. Cannot be undone.')) return;
+    try { await api(`/api/auth/users/${id}`, { method: 'DELETE' }); await loadUsers(); } catch (e) { setErr(e.message); }
+  };
   const saveCfg = async (e) => {
     e.preventDefault();
     const body = {
@@ -142,7 +146,7 @@ export default function Admin() {
         <div className="card">
           <h3>Users</h3>
           <table>
-            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Set</th></tr></thead>
+            <thead><tr><th>Name</th><th>Email</th><th>Status</th><th>Set</th><th>Remove</th></tr></thead>
             <tbody>
               {users.map((u) => (
                 <tr key={u.id}>
@@ -155,6 +159,7 @@ export default function Admin() {
                     </select>
                     <button onClick={() => setStatus(u.id, document.getElementById(`ustat-${u.id}`).value)}>Set</button>
                   </td>
+                  <td><button className="del" style={{ color: 'var(--err)', border: '1px solid var(--err)', background: 'transparent' }} onClick={() => delUser(u.id)}>Delete</button></td>
                 </tr>
               ))}
             </tbody>
