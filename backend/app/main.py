@@ -7,8 +7,9 @@ from .models import Event, MealOption
 from . import auth
 from . import lodging
 from . import events
+from . import meals
 
-app = FastAPI(title="TregoCon API", version="0.5.0")
+app = FastAPI(title="TregoCon API", version="0.6.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -23,6 +24,8 @@ app.include_router(lodging.router)
 app.include_router(lodging.admin_router)
 app.include_router(events.router)
 app.include_router(events.admin_router)
+app.include_router(meals.router)
+app.include_router(meals.admin_router)
 
 
 @app.on_event("startup")
