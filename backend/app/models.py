@@ -108,6 +108,7 @@ class Room(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     lodge_id = Column(Integer, ForeignKey("lodges.id"), nullable=False)
     label = Column(String, nullable=False)
+    floor = Column(String, default="main")  # upstairs | main | down
     capacity = Column(Integer, nullable=False, default=2)  # 1 or 2
     bed_config = Column(SAEnum(BedConfig), default=BedConfig.double)
     notes = Column(String)
@@ -138,6 +139,9 @@ class Reservation(Base):
     nights_bitmask = Column(Integer, nullable=False, default=0)
     commitment_status = Column(SAEnum(CommitmentStatus), default=CommitmentStatus.committed)
     payment_status = Column(SAEnum(PaymentStatus), default=PaymentStatus.unpaid)
+    # Named companions (spouse/child) added at reservation time — billed same as a person.
+    # Stored as JSON array of strings (names). Max length constrained by room capacity.
+    companions = Column(String, default="[]")
     event = relationship("Event", back_populates="reservations")
     room = relationship("Room", back_populates="reservations")
     user = relationship("User")

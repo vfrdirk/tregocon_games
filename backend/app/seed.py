@@ -10,17 +10,30 @@ from .db import SessionLocal, init_db
 from .models import Event, Lodge, Room, MealOption, MEAL_SERVICES
 
 
-# Template lodges/rooms carried forward each year (details TBD by admin later).
+# Main Cabin layout (TregoCon at Edgewood). One lodge, three floors.
+# Upstairs: 6 rooms (2 doubles + 4 singles). Main floor: 2 doubles. Downstairs: 3 singles.
+# "double" = two beds (holds up to 2 people); "single" = queen (holds 1, or a couple).
+# Funny room names supplied later by the coordinator; floor-based labels used for now.
 TEMPLATE_LODGES = [
-    {"name": "Black Bear Reunion Lodge", "rooms": [
-        {"label": "Bear 1", "capacity": 2, "bed_config": "double"},
-        {"label": "Bear 2", "capacity": 2, "bed_config": "double"},
-        {"label": "Bear 3", "capacity": 1, "bed_config": "single"},
-    ]},
-    {"name": "Second Cabin", "rooms": [
-        {"label": "Cabin A", "capacity": 2, "bed_config": "double"},
-        {"label": "Cabin B", "capacity": 2, "bed_config": "double"},
-    ]},
+    {"name": "Main Cabin", "floors": {
+        "upstairs": [
+            {"label": "Upstairs 1", "capacity": 2, "bed_config": "double"},
+            {"label": "Upstairs 2", "capacity": 2, "bed_config": "double"},
+            {"label": "Upstairs 3", "capacity": 1, "bed_config": "single"},
+            {"label": "Upstairs 4", "capacity": 1, "bed_config": "single"},
+            {"label": "Upstairs 5", "capacity": 1, "bed_config": "single"},
+            {"label": "Upstairs 6", "capacity": 1, "bed_config": "single"},
+        ],
+        "main": [
+            {"label": "Main 1", "capacity": 2, "bed_config": "double"},
+            {"label": "Main 2", "capacity": 2, "bed_config": "double"},
+        ],
+        "down": [
+            {"label": "Down 1", "capacity": 1, "bed_config": "single"},
+            {"label": "Down 2", "capacity": 1, "bed_config": "single"},
+            {"label": "Down 3", "capacity": 1, "bed_config": "single"},
+        ],
+    }},
 ]
 
 
@@ -44,23 +57,27 @@ def seed_event(year: int, name: str, opens_at: str = None, lodge_rate_cents: int
         db.add(ev)
         db.flush()
 
+        room_count = 0
         for lt in TEMPLATE_LODGES:
             lodge = Lodge(event_id=ev.id, name=lt["name"])
             db.add(lodge)
             db.flush()
-            for rt in lt["rooms"]:
-                db.add(Room(
-                    event_id=ev.id, lodge_id=lodge.id,
-                    label=rt["label"], capacity=rt["capacity"],
-                    bed_config=rt["bed_config"],
-                ))
+            for floor, rooms in lt["floors"].items():
+                for rt in rooms:
+                    db.add(Room(
+                        event_id=ev.id, lodge_id=lodge.id, floor=floor,
+                        label=rt["label"], capacity=rt["capacity"],
+                        bed_config=rt["bed_config"],
+                    ))
+                    room_count += 1
 
         for svc in MEAL_SERVICES:
             db.add(MealOption(event_id=ev.id, service=svc, price=0))
 
         db.commit()
-        print(f"Seeded Event {year} (id={ev.id}) with {len(TEMPLATE_LODGES)} lodges, "
-              f"{sum(len(l['rooms']) for l in TEMPLATE_LODGES)} rooms, {len(MEAL_SERVICES)} meal options.")
+        lodge_count = len(TEMPLATE_LODGES)
+        print(f"Seeded Event {year} (id={ev.id}) with {lodge_count} lodge, "
+              f"{room_count} rooms, {len(MEAL_SERVICES)} meal options.")
         return ev
     finally:
         db.close()

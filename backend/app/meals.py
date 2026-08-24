@@ -1,10 +1,11 @@
 """Meals + ledger (M6).
 
 Meals are HEADCOUNT-FIRST (who's eating what); cost is tentative ($0 default,
-admin-configurable). Per-user balance = lodging (nights x $50) + meals (selected
-services x price). Payment status is marked by the coordinator (Evan) to
-reconcile cash/Venmo offline.
+admin-configurable). Per-user balance = lodging (nights x $50 x people) + meals
+(selected services x price). Payment status is marked by the coordinator (Evan)
+to reconcile cash/Venmo offline.
 """
+import json
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
@@ -85,8 +86,9 @@ def my_ledger(user: User = Depends(get_current_user), db: DBSession = Depends(ge
     lodging_cents = 0
     nights = 0
     if res:
+        people = 1 + len(json.loads(res.companions or "[]") or [])
         nights = bin(res.nights_bitmask).count('1')
-        lodging_cents = nights * ev.lodging_rate_per_night
+        lodging_cents = nights * ev.lodging_rate_per_night * people
     mine = db.query(MealRSVP).join(MealOption).filter(
         MealRSVP.user_id == user.id, MealOption.event_id == ev.id).all()
     meal_ids = [m.meal_option_id for m in mine]

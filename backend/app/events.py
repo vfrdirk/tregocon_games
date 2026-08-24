@@ -6,6 +6,7 @@ preserved (old Event stays); writes are gated by registration window.
 """
 from datetime import datetime
 import os
+import json
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -87,7 +88,7 @@ def create_next_event(payload: CreateNextIn, user: User = Depends(get_current_us
         db.add(new_lg)
         db.flush()
         for r in db.query(Room).filter(Room.lodge_id == lg.id).all():
-            db.add(Room(event_id=ev.id, lodge_id=new_lg.id, label=r.label,
+            db.add(Room(event_id=ev.id, lodge_id=new_lg.id, label=r.label, floor=r.floor,
                         capacity=r.capacity, bed_config=r.bed_config, notes=r.notes))
     # Copy meal-option SERVICES forward (no RSVPs)
     for m in db.query(MealOption).filter(MealOption.event_id == src.id).all():
@@ -137,7 +138,10 @@ def dashboard(user: User = Depends(get_current_user), db: DBSession = Depends(ge
     reservations = db.query(Reservation).filter(Reservation.event_id == ev.id).all()
     rooms = db.query(Room).filter(Room.event_id == ev.id).all()
     paid = sum(1 for r in reservations if r.payment_status != PaymentStatus.unpaid)
-    nights_total = sum(bin(r.nights_bitmask).count('1') for r in reservations)
+    nights_total = 0
+    for r in reservations:
+        people = 1 + len(json.loads(r.companions or "[]") or [])
+        nights_total += bin(r.nights_bitmask).count('1') * people
     # meal headcounts
     meal_opts = db.query(MealOption).filter(MealOption.event_id == ev.id).all()
     meal_counts = []
