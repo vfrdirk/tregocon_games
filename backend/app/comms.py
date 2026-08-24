@@ -65,12 +65,30 @@ class SmsProvider:
         if not self.enabled:
             logger.info("[sms:disabled] to=%s body=%s", to, body[:80])
             return False
-        from_number = os.environ.get("TWILIO_FROM_NUMBER")
+        from_number = _normalize_phone(os.environ.get("TWILIO_FROM_NUMBER"))
         if not from_number:
             logger.error("[sms] TWILIO_FROM_NUMBER not set; cannot send")
             return False
-        self._get_client().messages.create(to=to, from_=from_number, body=body)
+        to_number = _normalize_phone(to)
+        if not to_number:
+            logger.error("[sms] invalid destination number: %r", to)
+            return False
+        self._get_client().messages.create(to=to_number, from_=from_number, body=body)
         return True
+
+
+def _normalize_phone(num: str) -> str:
+    """Coerce to E.164. Accepts +, 1-prefix, or bare 10-digit US numbers."""
+    if not num:
+        return ""
+    s = num.strip().replace(" ", "").replace("-", "").replace("(", "").replace(")", "")
+    if s.startswith("+"):
+        return s
+    if s.startswith("1") and len(s) == 11:
+        return "+" + s
+    if len(s) == 10:
+        return "+1" + s
+    return "+" + s
 
 
 class Comms:
