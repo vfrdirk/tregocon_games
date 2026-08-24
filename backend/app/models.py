@@ -173,6 +173,7 @@ class GameSession(Base):
     time_box = Column(SAEnum(TimeBox), default=TimeBox.now)
     scheduled_at = Column(DateTime, nullable=True)
     location_room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True)
+    description = Column(String, nullable=True)
     status = Column(SAEnum(GameStatus), default=GameStatus.open)
     event = relationship("Event", back_populates="game_sessions")
     signups = relationship("GameSignup", back_populates="game_session", cascade="all, delete-orphan")
