@@ -77,7 +77,12 @@ export default function Admin() {
                 <tr key={u.id}>
                   <td>{u.display_name}</td><td>{u.email}</td><td>{u.status}</td>
                   <td>
-                    {['approved', 'admin', 'pending'].map((s) => <button key={s} onClick={() => setStatus(u.id, s)}>{s}</button>)}
+                    <select id={`ustat-${u.id}`} defaultValue={u.status}>
+                      <option value="pending">Pending</option>
+                      <option value="approved">Approved</option>
+                      <option value="admin">Admin</option>
+                    </select>
+                    <button onClick={() => setStatus(u.id, document.getElementById(`ustat-${u.id}`).value)}>Set</button>
                   </td>
                 </tr>
               ))}

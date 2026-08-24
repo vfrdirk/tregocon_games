@@ -50,7 +50,7 @@ export default function Lodging() {
   const FLOOR_ORDER = ['upstairs', 'main', 'down'];
   const FLOOR_LABEL = { upstairs: 'Upstairs', main: 'Main Floor', down: 'Downstairs' };
   const selectedRoom = sel.room ? Object.values(byFloor).flatMap(Object.values).find((r) => r.id === sel.room) : null;
-  const maxCompanions = selectedRoom ? selectedRoom.capacity - selectedRoom.spaces_left - 1 : 0;
+  const maxCompanions = selectedRoom ? selectedRoom.spaces_left - 1 : 0;
 
   return (
     <div>
