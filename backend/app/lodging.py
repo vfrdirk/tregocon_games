@@ -78,6 +78,7 @@ def availability(db: DBSession = Depends(get_db)):
     ev = active_event(db)
     if not ev:
         return {"event": None}
+    rate = ev.lodging_rate_per_night
     lodges = db.query(Lodge).filter(Lodge.event_id == ev.id).all()
     out = []
     for lg in lodges:
@@ -89,6 +90,7 @@ def availability(db: DBSession = Depends(get_db)):
                 "display_name": x.user.display_name,
                 "nights": mask_to_nights(x.nights_bitmask),
                 "commitment": x.commitment_status.value,
+                "cost_cents": bin(x.nights_bitmask).count('1') * rate,
             } for x in res]
             rooms.append({
                 "id": r.id, "label": r.label, "capacity": r.capacity,
@@ -99,7 +101,8 @@ def availability(db: DBSession = Depends(get_db)):
         out.append({"id": lg.id, "name": lg.name, "description": lg.description, "rooms": rooms})
     return {
         "event": {"id": ev.id, "year": ev.year, "name": ev.name,
-                  "opens_at": ev.registration_opens_at.isoformat() if ev.registration_opens_at else None},
+                  "opens_at": ev.registration_opens_at.isoformat() if ev.registration_opens_at else None,
+                  "rate_per_night_cents": rate},
         "lodges": out,
     }
 

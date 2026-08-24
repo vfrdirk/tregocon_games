@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
+const PRETTY = (s) => s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+
 export default function Meals() {
   const [list, setList] = useState(null);
   const [mine, setMine] = useState([]);
@@ -21,24 +23,30 @@ export default function Meals() {
   };
 
   if (!list) return <div>Loading…</div>;
+  const price = list.event.meal_price_per_service_cents;
 
   return (
     <div>
       <h2>Meals</h2>
-      <p className="muted">Headcount for the cooks — pick what you'll eat. {list.event.meal_price_per_service_cents > 0 ? `$${(list.event.meal_price_per_service_cents / 100).toFixed(2)}/meal` : 'No charge set yet.'}</p>
+      <p className="muted">Headcount for the cooks — pick what you'll eat. {price > 0 ? `${money(price)}/meal` : 'No charge set yet.'}</p>
       <div className="card">
+        <div className="mealrow head">
+          <span className="mk"></span>
+          <span className="mname">Meal</span>
+          <span className="mhc">Eating</span>
+        </div>
         {list.services.map((s) => (
-          <label key={s.id} className={'meal' + (mine.includes(s.service) ? ' sel' : '')}>
-            <input type="checkbox" checked={mine.includes(s.service)} onChange={() => toggle(s.service)} />
-            <span>{s.service.replace('_', ' ')}</span>
-            <span className="hc">{s.headcount} eating</span>
+          <label key={s.id} className={'mealrow' + (mine.includes(s.service) ? ' sel' : '')}>
+            <span className="mk"><input type="checkbox" checked={mine.includes(s.service)} onChange={() => toggle(s.service)} /></span>
+            <span className="mname">{PRETTY(s.service)}</span>
+            <span className="mhc">{s.headcount}</span>
           </label>
         ))}
       </div>
       {ledger && (
         <div className="card">
           <h3>Your tally</h3>
-          <p>Lodging: ${(ledger.lodging_cents / 100).toFixed(2)} · Meals: ${(ledger.meals_cents / 100).toFixed(2)} · <strong>Total: ${(ledger.total_cents / 100).toFixed(2)}</strong></p>
+          <p>Lodging: {money(ledger.lodging_cents)} · Meals: {money(ledger.meals_cents)} · <strong>Total: {money(ledger.total_cents)}</strong></p>
         </div>
       )}
       {msg && <p className="ok">{msg}</p>}
@@ -46,3 +54,5 @@ export default function Meals() {
     </div>
   );
 }
+
+const money = (c) => `$${(c / 100).toFixed(2)}`;

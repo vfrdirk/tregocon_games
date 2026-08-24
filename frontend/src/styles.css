@@ -23,11 +23,20 @@ label { display:block; margin:.4rem 0; }
 .room.sel { border-color:var(--accent); }
 .room.full { opacity:.5; cursor:not-allowed; }
 .rlabel { font-weight:600; } .rcap { font-size:.85rem; color:#9aa6c4; }
-.occ { font-size:.8rem; color:var(--accent); }
+.occ { font-size:.85rem; padding:.25rem 0; border-top:1px solid #2a3a5c; }
+.occ.empty { color:#7e8aac; font-style:italic; }
+.oname { font-weight:600; color:var(--accent); }
+.onights { color:#9aa6c4; margin:0 .4rem; }
+.ocost { margin-left:auto; color:var(--txt); }
+.occupants { display:flex; flex-direction:column; gap:.15rem; margin-top:.3rem; }
+
 .night { display:inline-flex; align-items:center; gap:.3rem; margin-right:1rem; }
-.meal { display:flex; align-items:center; gap:.6rem; padding:.4rem; }
-.meal.sel { background:#1b2236; border-radius:6px; }
-.hc { margin-left:auto; color:#9aa6c4; font-size:.85rem; }
+.mealrow { display:flex; align-items:center; gap:.6rem; padding:.5rem .3rem; border-bottom:1px solid #36456b; }
+.mealrow.head { color:#9aa6c4; font-size:.8rem; text-transform:uppercase; letter-spacing:.04em; }
+.mealrow.sel { background:#1b2236; border-radius:6px; }
+.mk { width:1.5rem; display:flex; align-items:center; }
+.mname { flex:1; }
+.mhc { width:4rem; text-align:right; color:#9aa6c4; }
 .games { display:flex; gap:.7rem; flex-wrap:wrap; }
 .gcard { background:var(--card); border-radius:10px; padding:.8rem; width:240px; border-left:4px solid var(--accent); }
 .gcard.status-played { opacity:.6; border-left-color:var(--ok); }
