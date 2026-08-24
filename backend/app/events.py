@@ -68,8 +68,6 @@ def create_next_event(payload: CreateNextIn, user: User = Depends(get_current_us
     if db.query(Event).filter(Event.year == payload.year).first():
         raise HTTPException(status_code=409, detail=f"Event {payload.year} already exists")
     src = latest_event(db)
-    if not src:
-        raise HTTPException(status_code=400, detail="No source event to copy from")
     opens = payload.opens_at and datetime.fromisoformat(payload.opens_at)
     if not opens:
         opens = datetime(payload.year, 1, 15)
@@ -82,20 +80,34 @@ def create_next_event(payload: CreateNextIn, user: User = Depends(get_current_us
     )
     db.add(ev)
     db.flush()
-    # Copy lodges + rooms forward
-    for lg in db.query(Lodge).filter(Lodge.event_id == src.id).all():
-        new_lg = Lodge(event_id=ev.id, name=lg.name, description=lg.description, photo_url=lg.photo_url)
-        db.add(new_lg)
-        db.flush()
-        for r in db.query(Room).filter(Room.lodge_id == lg.id).all():
-            db.add(Room(event_id=ev.id, lodge_id=new_lg.id, label=r.label, floor=r.floor,
-                        capacity=r.capacity, bed_config=r.bed_config, notes=r.notes))
+    if src:
+        # Copy lodges + rooms forward from the latest event
+        for lg in db.query(Lodge).filter(Lodge.event_id == src.id).all():
+            new_lg = Lodge(event_id=ev.id, name=lg.name, description=lg.description, photo_url=lg.photo_url)
+            db.add(new_lg)
+            db.flush()
+            for r in db.query(Room).filter(Room.lodge_id == lg.id).all():
+                db.add(Room(event_id=ev.id, lodge_id=new_lg.id, label=r.label, floor=r.floor,
+                            capacity=r.capacity, bed_config=r.bed_config, notes=r.notes))
+        meal_src = db.query(MealOption).filter(MealOption.event_id == src.id).all()
+    else:
+        # No source event yet — build the first event from the Main Cabin template
+        from .seed import TEMPLATE_LODGES, MEAL_SERVICES
+        for lt in TEMPLATE_LODGES:
+            new_lg = Lodge(event_id=ev.id, name=lt["name"])
+            db.add(new_lg)
+            db.flush()
+            for floor, rooms in lt["floors"].items():
+                for rt in rooms:
+                    db.add(Room(event_id=ev.id, lodge_id=new_lg.id, label=rt["label"], floor=floor,
+                                capacity=rt["capacity"], bed_config=rt["bed_config"]))
+        meal_src = [type("M", (), {"service": s})() for s in MEAL_SERVICES]
     # Copy meal-option SERVICES forward (no RSVPs)
-    for m in db.query(MealOption).filter(MealOption.event_id == src.id).all():
+    for m in meal_src:
         db.add(MealOption(event_id=ev.id, service=m.service, price=payload.meal_price_per_service_cents))
     db.commit()
     return {"status": "ok", "event_id": ev.id, "year": ev.year,
-            "message": f"Created {ev.name} by copying {src.year}'s template."}
+            "message": f"Created {ev.name}" + (f" by copying {src.year}'s template." if src else " from the Main Cabin template.")}
 
 
 # ---------- admin dashboard summary ----------

@@ -13,18 +13,25 @@ export default function Admin() {
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
-  const loadDash = async () => { try { setDash((await api('/api/admin/dashboard')).lodging); } catch (e) { setErr(e.message); } };
+  const loadDash = async () => {
+    try {
+      const r = await api('/api/admin/dashboard');
+      setDash(r.event ? r.lodging : null);
+      if (!r.event) setMsg('No event yet — seed the first event (run the seed script or use "Create next event" after one exists).');
+    } catch (e) { setErr(e.message); }
+  };
   const loadUsers = async () => { try { setUsers((await api('/api/admin/users')).users); } catch (e) { setErr(e.message); } };
   const loadComms = async () => { try { setComms(await api('/api/admin/event/comms-status')); } catch (e) { setErr(e.message); } };
   const loadRooms = async () => {
     try {
       const d = await api('/api/lodging/availability');
       const flat = [];
-      for (const lg of d.lodges) for (const r of lg.rooms) flat.push(r);
+      for (const lg of (d.lodges || [])) for (const r of lg.rooms) flat.push(r);
       setRooms(flat);
       const init = {};
       for (const r of flat) init[r.id] = { label: r.label, floor: r.floor, bed_config: r.bed_config };
       setRoomEdits(init);
+      if (!d.lodges || d.lodges.length === 0) setMsg('No rooms yet — seed an event first.');
     } catch (e) { setErr(e.message); }
   };
 
