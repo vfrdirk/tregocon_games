@@ -50,7 +50,7 @@ def my_meals(user: User = Depends(get_current_user), db: DBSession = Depends(get
     by_service = {m.service: m.id for m in opts}
     mine = db.query(MealRSVP).join(MealOption).filter(
         MealRSVP.user_id == user.id, MealOption.event_id == ev.id).all()
-    return {"rsvps": [m.service for m in mine]}
+    return {"rsvps": [m.meal_option.service for m in mine]}
 
 
 @router.post("/rsvp")
@@ -60,11 +60,12 @@ def set_rsvp(payload: RsvpIn, user: User = Depends(get_current_user), db: DBSess
         raise HTTPException(status_code=404, detail="No active event")
     opts = db.query(MealOption).filter(MealOption.event_id == ev.id).all()
     by_service = {m.service: m.id for m in opts}
-    # clear existing
+    # clear existing (flush so the INSERT below can't collide on the unique key)
     existing = db.query(MealRSVP).join(MealOption).filter(
         MealRSVP.user_id == user.id, MealOption.event_id == ev.id).all()
     for r in existing:
         db.delete(r)
+    db.flush()
     # add selected
     for svc in payload.services:
         if svc not in by_service:

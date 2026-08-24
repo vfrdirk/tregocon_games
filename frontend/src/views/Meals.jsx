@@ -16,8 +16,8 @@ export default function Meals() {
 
   const toggle = async (svc) => {
     const next = mine.includes(svc) ? mine.filter((x) => x !== svc) : [...mine, svc];
-    try { await api('/api/meals/rsvp', { method: 'POST', body: { services: next } }); setMine(next); await load(); }
-    catch (e) { setErr(e.message); }
+    try { await api('/api/meals/rsvp', { method: 'POST', body: { services: next } }); await load(); }
+    catch (e) { setErr(e.message); await load(); }
   };
 
   if (!list) return <div>Loading…</div>;
