@@ -36,7 +36,8 @@ def _notify():
 # ---------- schemas ----------
 class GameIn(BaseModel):
     title: str
-    time_box: str = "now"  # now | after_breakfast | noon | evening | specific_time
+    time_box: str = None  # optional structured hint; free-text `when_text` is preferred
+    when: str = None  # free text, e.g. "ASAP", "after dinner", "8pm" (mapped to when_text)
     scheduled_at: str = None  # ISO, for specific_time
     location_room_id: int = None
     description: str = None
@@ -63,6 +64,7 @@ def _serialize(ev_id, db, current_user_id=None):
         loc = db.query(Room).filter(Room.id == g.location_room_id).first()
         out.append({
             "id": g.id, "title": g.title, "time_box": g.time_box.value if g.time_box else None,
+            "when": g.when_text, "posted_at": g.posted_at.isoformat() if g.posted_at else None,
             "scheduled_at": g.scheduled_at.isoformat() if g.scheduled_at else None,
             "location": loc.label if loc else None, "description": g.description,
             "status": g.status.value, "proposed_by": g.proposed_by,
@@ -119,14 +121,16 @@ def create_game(payload: GameIn, user: User = Depends(get_current_user), db: DBS
     ev = active_event(db)
     if not ev:
         raise HTTPException(status_code=404, detail="No active event")
-    try:
-        tb = TimeBox(payload.time_box)
-    except ValueError:
-        raise HTTPException(status_code=422, detail="Invalid time_box")
+    tb = None
+    if payload.time_box:
+        try:
+            tb = TimeBox(payload.time_box)
+        except ValueError:
+            raise HTTPException(status_code=422, detail="Invalid time_box")
     sched = payload.scheduled_at and datetime.fromisoformat(payload.scheduled_at)
     g = GameSession(
         event_id=ev.id, proposed_by=user.id, title=payload.title, time_box=tb,
-        scheduled_at=sched, location_room_id=payload.location_room_id,
+        when_text=payload.when, scheduled_at=sched, location_room_id=payload.location_room_id,
         description=payload.description, status=GameStatus.open)
     db.add(g)
     db.commit()

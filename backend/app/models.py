@@ -46,6 +46,7 @@ class TimeBox(str, enum.Enum):
 class GameStatus(str, enum.Enum):
     open = "open"
     full = "full"
+    playing = "playing"  # currently being played (Now Playing)
     played = "played"
     cancelled = "cancelled"
 
@@ -178,7 +179,9 @@ class GameSession(Base):
     proposed_by = Column(Integer, ForeignKey("users.id"), nullable=False)
     title = Column(String, nullable=False)
     time_box = Column(SAEnum(TimeBox), default=TimeBox.now)
+    when_text = Column(String, nullable=True)  # free-text timing, e.g. "ASAP", "after dinner", "8pm"
     scheduled_at = Column(DateTime, nullable=True)
+    posted_at = Column(DateTime, default=datetime.utcnow)
     location_room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True)
     description = Column(String, nullable=True)
     status = Column(SAEnum(GameStatus), default=GameStatus.open)
