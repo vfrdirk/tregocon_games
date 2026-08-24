@@ -6,7 +6,7 @@ const LABEL = { thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const money = (c) => `$${(c / 100).toFixed(2)}`;
 const BED = (b) => (b === 'double' ? '2 beds' : 'queen');
 
-export default function Lodging() {
+export default function Lodging({ user, onLogin }) {
   const [data, setData] = useState(null);
   const [mine, setMine] = useState(null);
   const [sel, setSel] = useState({ room: null, nights: [] });
