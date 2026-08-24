@@ -2,23 +2,27 @@ import React, { useEffect, useState } from 'react';
 import { api } from '../api.js';
 
 const PRETTY = (s) => s.replace('_', ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+const money = (c) => `$${(c / 100).toFixed(2)}`;
 
 export default function Meals() {
   const [list, setList] = useState(null);
   const [mine, setMine] = useState([]);
+  const [myCompanions, setMyCompanions] = useState([]);
   const [ledger, setLedger] = useState(null);
+  const [companion, setCompanion] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
   const load = async () => {
     const [l, m, lg] = await Promise.all([api('/api/meals'), api('/api/meals/my'), api('/api/meals/ledger/me')]);
-    setList(l); setMine(m.rsvps); setLedger(lg);
+    setList(l); setMine(m.rsvps); setMyCompanions(m.companions || []); setLedger(lg);
   };
   useEffect(() => { load().catch((e) => setErr(e.message)); }, []);
 
   const toggle = async (svc) => {
     const next = mine.includes(svc) ? mine.filter((x) => x !== svc) : [...mine, svc];
-    try { await api('/api/meals/rsvp', { method: 'POST', body: { services: next } }); await load(); }
+    const companions = companion.trim() ? [companion.trim()] : myCompanions;
+    try { await api('/api/meals/rsvp', { method: 'POST', body: { services: next, companions } }); await load(); }
     catch (e) { setErr(e.message); await load(); }
   };
 
@@ -42,6 +46,13 @@ export default function Meals() {
             <span className="mhc">{s.headcount}</span>
           </label>
         ))}
+        <div className="companion-box">
+          <label>Add companion (spouse/child) to your meals
+            <input placeholder="Full name" value={companion} onChange={(e) => setCompanion(e.target.value)} />
+          </label>
+          {myCompanions.length > 0 && <p className="muted">Registered companions: {myCompanions.join(', ')}</p>}
+          <p className="muted">Companion eats the same meals you select. Saved when you toggle any meal.</p>
+        </div>
       </div>
       {ledger && (
         <div className="card">
@@ -54,5 +65,3 @@ export default function Meals() {
     </div>
   );
 }
-
-const money = (c) => `$${(c / 100).toFixed(2)}`;

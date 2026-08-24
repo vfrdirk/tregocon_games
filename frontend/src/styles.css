@@ -41,6 +41,7 @@ label { display:block; margin:.4rem 0; }
 .mk { width:1.5rem; display:flex; align-items:center; }
 .mname { flex:1; }
 .mhc { width:4rem; text-align:right; color:#9aa6c4; }
+.companion-box { margin-top:.6rem; padding-top:.6rem; border-top:1px solid #36456b; }
 .games { display:flex; gap:.7rem; flex-wrap:wrap; }
 .gcard { background:var(--card); border-radius:10px; padding:.8rem; width:240px; border-left:4px solid var(--accent); }
 .gcard.status-played { opacity:.6; border-left-color:var(--ok); }

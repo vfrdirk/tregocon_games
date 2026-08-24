@@ -29,17 +29,18 @@ def meal_list(db: DBSession = Depends(get_db)):
     if not ev:
         return {"event": None, "services": []}
     opts = db.query(MealOption).filter(MealOption.event_id == ev.id).all()
-    return {
-        "event": {"year": ev.year, "meal_price_per_service_cents": ev.meal_price_per_service},
-        "services": [{"id": m.id, "service": m.service, "price_cents": m.price,
-                      "headcount": db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).count()}
-                     for m in opts],
-    }
+    out = []
+    for m in opts:
+        rows = db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).all()
+        cnt = sum(1 + len(json.loads(r.companions or "[]") or []) for r in rows)
+        out.append({"id": m.id, "service": m.service, "price_cents": m.price, "headcount": cnt})
+    return {"event": {"year": ev.year, "meal_price_per_service_cents": ev.meal_price_per_service}, "services": out}
 
 
 # ---------- user RSVP (toggle set of services) ----------
 class RsvpIn(BaseModel):
     services: list[str]  # list of service names, e.g. ["thu_dinner","fri_breakfast"]
+    companions: list[str] = []  # named spouse/child also eating these meals
 
 
 @router.get("/my")
@@ -51,7 +52,13 @@ def my_meals(user: User = Depends(get_current_user), db: DBSession = Depends(get
     by_service = {m.service: m.id for m in opts}
     mine = db.query(MealRSVP).join(MealOption).filter(
         MealRSVP.user_id == user.id, MealOption.event_id == ev.id).all()
-    return {"rsvps": [m.meal_option.service for m in mine]}
+    seen = set()
+    companions = []
+    for m in mine:
+        for c in (json.loads(m.companions or "[]") or []):
+            if c not in seen:
+                seen.add(c); companions.append(c)
+    return {"rsvps": [m.meal_option.service for m in mine], "companions": companions}
 
 
 @router.post("/rsvp")
@@ -67,13 +74,14 @@ def set_rsvp(payload: RsvpIn, user: User = Depends(get_current_user), db: DBSess
     for r in existing:
         db.delete(r)
     db.flush()
-    # add selected
+    # add selected (each with the same companion list)
+    companions = json.dumps([c.strip() for c in (payload.companions or []) if c.strip()])
     for svc in payload.services:
         if svc not in by_service:
             raise HTTPException(status_code=422, detail=f"Unknown meal service: {svc}")
-        db.add(MealRSVP(meal_option_id=by_service[svc], user_id=user.id))
+        db.add(MealRSVP(meal_option_id=by_service[svc], user_id=user.id, companions=companions))
     db.commit()
-    return {"status": "ok", "rsvps": payload.services}
+    return {"status": "ok", "rsvps": payload.services, "companions": json.loads(companions)}
 
 
 # ---------- per-user ledger ----------
@@ -93,7 +101,8 @@ def my_ledger(user: User = Depends(get_current_user), db: DBSession = Depends(ge
         MealRSVP.user_id == user.id, MealOption.event_id == ev.id).all()
     meal_ids = [m.meal_option_id for m in mine]
     meals = db.query(MealOption).filter(MealOption.id.in_(meal_ids)).all()
-    meals_cents = sum(m.price for m in meals)
+    # each RSVP row covers the user + their companions for that service
+    meals_cents = sum(m.price * (1 + len(json.loads(m_row.companions or "[]") or [])) for m_row in mine for m in meals if m.id == m_row.meal_option_id)
     return {
         "lodging_cents": lodging_cents, "nights": nights,
         "meals_cents": meals_cents, "meal_services": [m.service for m in meals],

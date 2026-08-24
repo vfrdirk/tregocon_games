@@ -163,6 +163,9 @@ class MealRSVP(Base):
     id = Column(Integer, primary_key=True)
     meal_option_id = Column(Integer, ForeignKey("meal_options.id"), nullable=False)
     user_id = Column(Integer, ForeignKey("users.id"), nullable=False)
+    # Named companions (spouse/child) registered for the meal by the account holder.
+    # Stored as JSON array of strings (names). Counted in headcount, billed to the account holder.
+    companions = Column(String, default="[]")
     meal_option = relationship("MealOption", back_populates="rsvps")
     user = relationship("User")
     __table_args__ = (UniqueConstraint("meal_option_id", "user_id", name="uq_meal_user"),)
