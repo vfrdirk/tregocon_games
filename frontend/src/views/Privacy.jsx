@@ -26,6 +26,12 @@ export default function Privacy() {
         These are the only third-party processors involved, and they handle your contact details solely to deliver
         the messages described above.
       </p>
+      <ul>
+        <li><strong>Mobile numbers are not shared.</strong> We do not sell, rent, or share your mobile number with any third party or affiliate for marketing or any other purpose.</li>
+        <li><strong>Message frequency:</strong> SMS is used only for TregoCon event notifications — typically a handful of messages per event (account approval, registration opening, and occasional announcements), roughly 1–5 messages total.</li>
+        <li><strong>Message and data rates may apply.</strong> Standard message and data rates from your mobile carrier may apply to any SMS we send.</li>
+        <li>You can opt out of SMS at any time by replying <strong>STOP</strong> to a message, or by removing your phone number from your account settings.</li>
+      </ul>
 
       <h3>Sharing</h3>
       <p>We do <strong>not</strong> sell or share your personal data with any third party beyond the email/SMS processors above.</p>
