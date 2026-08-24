@@ -94,6 +94,10 @@ table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding
 .lbtoolbar { position:absolute; top:0; left:0; right:0; display:flex; gap:.4rem; padding:.5rem; background:rgba(0,0,0,.5); }
 .lightbox img { max-width:92vw; max-height:82vh; border-radius:6px; transition:transform .05s; }
 button.accent { background:var(--accent); color:#0d1626; border-color:var(--accent); font-weight:600; }
+.mealadmin { display:flex; flex-direction:column; gap:.3rem; margin:.5rem 0; padding:.5rem; background:#1b2236; border-radius:8px; }
+.mealadmin input { font-weight:600; }
+.mealvol { margin:.4rem 0; }
+.mealvol ul { margin:.2rem 0; padding-left:1.1rem; }
 
 /* ===== Mobile + visual polish ===== */
 header { background:linear-gradient(90deg,#19233c,#26406b); box-shadow:0 2px 10px rgba(0,0,0,.35); position:sticky; top:0; z-index:20; }

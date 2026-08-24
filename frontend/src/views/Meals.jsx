@@ -42,7 +42,7 @@ export default function Meals() {
         {list.services.map((s) => (
           <label key={s.id} className={'mealrow' + (mine.includes(s.service) ? ' sel' : '')}>
             <span className="mk"><input type="checkbox" checked={mine.includes(s.service)} onChange={() => toggle(s.service)} /></span>
-            <span className="mname">{PRETTY(s.service)}</span>
+            <span className="mname">{s.label}</span>
             <span className="mhc">{s.headcount}</span>
           </label>
         ))}
@@ -53,6 +53,17 @@ export default function Meals() {
           {myCompanions.length > 0 && <p className="muted">Registered companions: {myCompanions.join(', ')}</p>}
           <p className="muted">Companion eats the same meals you select. Saved when you toggle any meal.</p>
         </div>
+      </div>
+      <div className="card">
+        <h3>Who's bringing what</h3>
+        {list.services.map((s) => (
+          <div key={s.id} className="mealvol">
+            <strong>{s.label}</strong>
+            {s.volunteers && s.volunteers.length > 0 ? (
+              <ul>{s.volunteers.map((v, i) => <li key={i}>{v.name}{v.dish ? ` — ${v.dish}` : ''}</li>)}</ul>
+            ) : <p className="muted">No dishes signed up yet.</p>}
+          </div>
+        ))}
       </div>
       {ledger && (
         <div className="card">

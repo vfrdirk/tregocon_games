@@ -33,8 +33,29 @@ def meal_list(db: DBSession = Depends(get_db)):
     for m in opts:
         rows = db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).all()
         cnt = sum(1 + len(json.loads(r.companions or "[]") or []) for r in rows)
-        out.append({"id": m.id, "service": m.service, "price_cents": m.price, "headcount": cnt})
+        out.append({"id": m.id, "service": m.service,
+                     "label": m.label or m.service.replace("_", " ").title(),
+                     "price_cents": m.price, "headcount": cnt,
+                     "volunteers": json.loads(m.volunteers or "[]")})
     return {"event": {"year": ev.year, "meal_price_per_service_cents": ev.meal_price_per_service}, "services": out}
+
+
+@admin_router.patch("/meal/{meal_id}")
+def edit_meal(meal_id: int, payload: dict, user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    m = db.query(MealOption).filter(MealOption.id == meal_id).first()
+    if not m:
+        raise HTTPException(status_code=404, detail="Meal not found")
+    if "label" in payload:
+        m.label = (payload["label"] or "").strip() or None
+    if "volunteers" in payload and isinstance(payload["volunteers"], list):
+        # sanitize: list of {name, dish}
+        clean = [{"name": str(v.get("name", "")), "dish": str(v.get("dish", ""))}
+                 for v in payload["volunteers"] if v.get("name") or v.get("dish")]
+        m.volunteers = json.dumps(clean)
+    db.commit()
+    return {"status": "ok", "id": m.id, "label": m.label, "volunteers": json.loads(m.volunteers or "[]")}
 
 
 # ---------- user RSVP (toggle set of services) ----------

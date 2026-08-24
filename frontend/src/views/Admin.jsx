@@ -6,7 +6,7 @@ export default function Admin() {
   const [dash, setDash] = useState(null);
   const [users, setUsers] = useState([]);
   const [comms, setComms] = useState(null);
-  const [cfg, setCfg] = useState({ name: '', resort_name: '', opens_at: '', closes_at: '', lodging_rate_per_night_cents: 5000, meal_price_per_service_cents: 0 });
+  const [cfg, setCfg] = useState({ name: '', resort_name: '', event_start: '', event_end: '', opens_at: '', closes_at: '', lodging_rate_per_night_cents: 5000, meal_price_per_service_cents: 0 });
 
   const loadCfg = async () => {
     try {
@@ -16,6 +16,8 @@ export default function Admin() {
         setCfg({
           name: e.name || '',
           resort_name: e.resort_name || '',
+          event_start: e.event_start ? e.event_start.slice(0, 16) : '',
+          event_end: e.event_end ? e.event_end.slice(0, 16) : '',
           opens_at: e.opens_at ? e.opens_at.slice(0, 16) : '',
           closes_at: e.closes_at ? e.closes_at.slice(0, 16) : '',
           lodging_rate_per_night_cents: e.lodging_rate_per_night_cents ?? 5000,
@@ -27,6 +29,8 @@ export default function Admin() {
   const [nextYear, setNextYear] = useState(new Date().getFullYear() + 1);
   const [rooms, setRooms] = useState([]);
   const [roomEdits, setRoomEdits] = useState({});
+  const [meals, setMeals] = useState([]);
+  const [mealEdits, setMealEdits] = useState({});
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
 
@@ -52,12 +56,41 @@ export default function Admin() {
     } catch (e) { setErr(e.message); }
   };
 
+  const loadMeals = async () => {
+    try {
+      const r = await api('/api/meals');
+      setMeals(r.services || []);
+      const init = {};
+      for (const m of (r.services || [])) {
+        init[m.id] = {
+          label: m.label || '',
+          volunteers: (m.volunteers || []).map((v) => `${v.name}: ${v.dish}`).join('\n'),
+        };
+      }
+      setMealEdits(init);
+    } catch (e) { setErr(e.message); }
+  };
+  const saveMeal = async (id) => {
+    try {
+      const e = mealEdits[id];
+      const volunteers = e.volunteers.split('\n').map((line) => {
+        const i = line.indexOf(':');
+        if (i === -1) return { name: line.trim(), dish: '' };
+        return { name: line.slice(0, i).trim(), dish: line.slice(i + 1).trim() };
+      }).filter((v) => v.name || v.dish);
+      await api(`/api/admin/meal/${id}`, { method: 'PATCH', body: { label: e.label, volunteers } });
+      setMsg(`Saved "${e.label || 'meal'}"`);
+      await loadMeals();
+    } catch (er) { setErr(er.message); }
+  };
+
   useEffect(() => {
     if (tab === 'dashboard') loadDash();
     if (tab === 'users') loadUsers();
     if (tab === 'comms') loadComms();
     if (tab === 'rooms') loadRooms();
     if (tab === 'config') loadCfg();
+    if (tab === 'config') loadMeals();
   }, [tab]);
 
   const setStatus = async (id, status) => { try { await api(`/api/admin/users/${id}`, { method: 'POST', body: { status } }); await loadUsers(); } catch (e) { setErr(e.message); } };
@@ -65,6 +98,8 @@ export default function Admin() {
     e.preventDefault();
     const body = {
       ...cfg,
+      event_start: cfg.event_start || null,
+      event_end: cfg.event_end || null,
       registration_opens_at: cfg.opens_at || null,
       registration_closes_at: cfg.closes_at || null,
     };
@@ -133,6 +168,8 @@ export default function Admin() {
           <form onSubmit={saveCfg}>
             <label>Event name<input type="text" value={cfg.name} onChange={(e) => setCfg({ ...cfg, name: e.target.value })} /></label>
             <label>Resort / venue name<input type="text" value={cfg.resort_name} onChange={(e) => setCfg({ ...cfg, resort_name: e.target.value })} /></label>
+            <label>Event starts<input type="datetime-local" value={cfg.event_start} onChange={(e) => setCfg({ ...cfg, event_start: e.target.value })} /></label>
+            <label>Event ends<input type="datetime-local" value={cfg.event_end} onChange={(e) => setCfg({ ...cfg, event_end: e.target.value })} /></label>
             <label>Registration opens<input type="datetime-local" value={cfg.opens_at} onChange={(e) => setCfg({ ...cfg, opens_at: e.target.value })} /></label>
             <label>Registration closes<input type="datetime-local" value={cfg.closes_at} onChange={(e) => setCfg({ ...cfg, closes_at: e.target.value })} /></label>
             <label>Lodging $/night (cents)<input type="number" value={cfg.lodging_rate_per_night_cents} onChange={(e) => setCfg({ ...cfg, lodging_rate_per_night_cents: +e.target.value })} /></label>
@@ -142,6 +179,15 @@ export default function Admin() {
           <h3>Next event</h3>
           <label>Year<input type="number" value={nextYear} onChange={(e) => setNextYear(+e.target.value)} /></label>
           <button onClick={createNext}>Create next event (copy template)</button>
+
+          <h3>Meals (labels + who's bringing what)</h3>
+          {meals.map((m) => (
+            <div key={m.id} className="mealadmin">
+              <input value={mealEdits[m.id]?.label || ''} placeholder={m.service} onChange={(e) => setMealEdits({ ...mealEdits, [m.id]: { ...mealEdits[m.id], label: e.target.value } })} />
+              <textarea rows={3} value={mealEdits[m.id]?.volunteers || ''} placeholder={"One per line: Name: dish"} onChange={(e) => setMealEdits({ ...mealEdits, [m.id]: { ...mealEdits[m.id], volunteers: e.target.value } })} />
+              <button onClick={() => saveMeal(m.id)}>Save</button>
+            </div>
+          ))}
         </div>
       )}
 

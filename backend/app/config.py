@@ -30,6 +30,8 @@ os.makedirs(UPLOAD_DIR, exist_ok=True)
 class EventConfigIn(BaseModel):
     name: str = None
     resort_name: str = None
+    event_start: str = None  # ISO
+    event_end: str = None
     registration_opens_at: str = None  # ISO
     registration_closes_at: str = None
     lodging_rate_per_night_cents: int = None
@@ -48,6 +50,10 @@ def set_event_config(payload: EventConfigIn, user: User = Depends(get_current_us
         ev.name = payload.name
     if payload.resort_name is not None:
         ev.resort_name = payload.resort_name
+    if payload.event_start is not None:
+        ev.event_start = datetime.fromisoformat(payload.event_start)
+    if payload.event_end is not None:
+        ev.event_end = datetime.fromisoformat(payload.event_end)
     if payload.registration_opens_at is not None:
         ev.registration_opens_at = datetime.fromisoformat(payload.registration_opens_at)
     if payload.registration_closes_at is not None:
@@ -70,6 +76,8 @@ def get_event_config(db: DBSession = Depends(get_db)):
     return {
         "event": {
             "id": ev.id, "year": ev.year, "name": ev.name, "resort_name": ev.resort_name,
+            "event_start": ev.event_start.isoformat() if ev.event_start else None,
+            "event_end": ev.event_end.isoformat() if ev.event_end else None,
             "opens_at": ev.registration_opens_at.isoformat() if ev.registration_opens_at else None,
             "closes_at": ev.registration_closes_at.isoformat() if ev.registration_closes_at else None,
             "lodging_rate_per_night_cents": ev.lodging_rate_per_night,

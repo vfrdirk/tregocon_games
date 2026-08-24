@@ -80,6 +80,9 @@ class Event(Base):
     # Registration window (write-gating happens at request time, no cron).
     registration_opens_at = Column(DateTime, nullable=True)
     registration_closes_at = Column(DateTime, nullable=True)
+    # Actual event dates (Thu afternoon -> Sun morning). Displayed to attendees.
+    event_start = Column(DateTime, nullable=True)
+    event_end = Column(DateTime, nullable=True)
     # Meal pricing (tentative; default $0 — headcount-first).
     meal_price_per_service = Column(Integer, default=0)  # cents
     lodging_rate_per_night = Column(Integer, default=5000)  # cents ($50)
@@ -154,7 +157,10 @@ class MealOption(Base):
     id = Column(Integer, primary_key=True)
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     service = Column(String, nullable=False)  # one of MEAL_SERVICES
+    label = Column(String, nullable=True)  # editable display name (e.g. "Thursday Potluck")
     price = Column(Integer, default=0)  # cents
+    # Volunteers bringing dishes: JSON list of {name, dish}
+    volunteers = Column(String, default="[]")
     event = relationship("Event", back_populates="meal_options")
     rsvps = relationship("MealRSVP", back_populates="meal_option", cascade="all, delete-orphan")
 
