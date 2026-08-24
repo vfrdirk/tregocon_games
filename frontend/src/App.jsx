@@ -66,10 +66,12 @@ export default function App() {
     return (
       <div className="authwrap">
         {status && status.event && <EventBanner ev={status.event} state={status.state} />}
-        <Login onLogin={refreshMe} />
-        <Register />
+        {view === 'privacy' && <Privacy />}
+        {view !== 'privacy' && (<><Login onLogin={refreshMe} /><Register /></>)}
         <p className="muted" style={{ textAlign: 'center' }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); setView('privacy'); }}>Privacy Policy</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setView(view === 'privacy' ? 'lodging' : 'privacy'); }}>
+            {view === 'privacy' ? 'Back' : 'Privacy Policy'}
+          </a>
         </p>
       </div>
     );
