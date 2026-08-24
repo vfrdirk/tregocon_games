@@ -125,8 +125,9 @@ def login(payload: LoginIn, response: Response, db: DBSession = Depends(get_db))
     if user.status != UserStatus.approved and user.status != UserStatus.admin:
         raise HTTPException(status_code=403, detail="Account not yet approved")
     token = make_session(db, user)
+    secure_cookie = os.environ.get("SECURE_COOKIE", "false").lower() == "true"
     response.set_cookie(COOKIE_NAME, token, httponly=True, samesite="lax",
-                        max_age=SESSION_DAYS * 86400, secure=False)  # secure=True in Phase 1 prod
+                        max_age=SESSION_DAYS * 86400, secure=secure_cookie)
     return {"status": "ok", "user": {"id": user.id, "email": user.email,
                                      "display_name": user.display_name, "role": user.status.value}}
 
