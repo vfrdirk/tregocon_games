@@ -1,34 +1,25 @@
 stages:
-  - build
   - deploy
 
-variables:
-  IMAGE: "$CI_REGISTRY_IMAGE/backend:latest"
-
-build_backend:
-  stage: build
-  image: docker:24
-  services:
-    - docker:24-dind
-  before_script:
-    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
-  script:
-    - docker build -t $IMAGE ./backend
-    - docker push $IMAGE
-  rules:
-    - if: '$CI_COMMIT_BRANCH == "main"'
-
+# Phase 1 (Lightsail): no container registry needed.
+# The deploy job SSHes into the Lightsail box and builds/relaunches the stack
+# via docker compose (which builds backend/frontend images on the box).
+# Required CI variables (Settings > CI/CD > Variables, masked):
+#   SSH_PRIVATE_KEY  - private key for $DEPLOY_USER@$DEPLOY_HOST
+#   SSH_KNOWN_HOSTS  - `ssh-keyscan $DEPLOY_HOST`
+#   DEPLOY_USER      - e.g. ubuntu
+#   DEPLOY_HOST      - the Lightsail static IP / DNS (play.tregocon.games)
 deploy_lightsail:
   stage: deploy
   image: alpine:3.20
   before_script:
-    - apk add --no-cache openssh-client
+    - apk add --no-cache openssh-client git
     - eval $(ssh-agent -s)
     - echo "$SSH_PRIVATE_KEY" | tr -d '\r' | ssh-add -
     - mkdir -p ~/.ssh
     - echo "$SSH_KNOWN_HOSTS" >> ~/.ssh/known_hosts
   script:
-    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /opt/tregocon && git pull origin main && docker compose -f docker-compose.prod.yml --env-file .env pull && docker compose -f docker-compose.prod.yml --env-file .env up -d"
+    - ssh $DEPLOY_USER@$DEPLOY_HOST "cd /opt/tregocon && git pull origin main && docker compose -f docker-compose.prod.yml --env-file .env up -d --build"
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
   environment:
