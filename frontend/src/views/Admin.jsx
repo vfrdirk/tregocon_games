@@ -6,7 +6,24 @@ export default function Admin() {
   const [dash, setDash] = useState(null);
   const [users, setUsers] = useState([]);
   const [comms, setComms] = useState(null);
-  const [cfg, setCfg] = useState({ lodging_rate_per_night_cents: 5000, meal_price_per_service_cents: 0 });
+  const [cfg, setCfg] = useState({ name: '', resort_name: '', opens_at: '', closes_at: '', lodging_rate_per_night_cents: 5000, meal_price_per_service_cents: 0 });
+
+  const loadCfg = async () => {
+    try {
+      const r = await api('/api/event/config');
+      if (r.event) {
+        const e = r.event;
+        setCfg({
+          name: e.name || '',
+          resort_name: e.resort_name || '',
+          opens_at: e.opens_at ? e.opens_at.slice(0, 16) : '',
+          closes_at: e.closes_at ? e.closes_at.slice(0, 16) : '',
+          lodging_rate_per_night_cents: e.lodging_rate_per_night_cents ?? 5000,
+          meal_price_per_service_cents: e.meal_price_per_service_cents ?? 0,
+        });
+      }
+    } catch (e) { setErr(e.message); }
+  };
   const [nextYear, setNextYear] = useState(new Date().getFullYear() + 1);
   const [rooms, setRooms] = useState([]);
   const [roomEdits, setRoomEdits] = useState({});
@@ -40,10 +57,22 @@ export default function Admin() {
     if (tab === 'users') loadUsers();
     if (tab === 'comms') loadComms();
     if (tab === 'rooms') loadRooms();
+    if (tab === 'config') loadCfg();
   }, [tab]);
 
   const setStatus = async (id, status) => { try { await api(`/api/admin/users/${id}`, { method: 'POST', body: { status } }); await loadUsers(); } catch (e) { setErr(e.message); } };
-  const saveCfg = async (e) => { e.preventDefault(); try { await api('/api/admin/event/config', { method: 'PUT', body: cfg }); setMsg('Config saved'); } catch (e) { setErr(e.message); } };
+  const saveCfg = async (e) => {
+    e.preventDefault();
+    const body = {
+      ...cfg,
+      registration_opens_at: cfg.opens_at || null,
+      registration_closes_at: cfg.closes_at || null,
+    };
+    delete body.opens_at;
+    delete body.closes_at;
+    try { await api('/api/admin/event/config', { method: 'PUT', body }); setMsg('Config saved'); }
+    catch (e) { setErr(e.message); }
+  };
   const createNext = async () => {
     try { const r = await api('/api/admin/event/create-next', { method: 'POST', body: { year: nextYear } }); setMsg(r.message); }
     catch (e) { setErr(e.message); }
@@ -102,6 +131,10 @@ export default function Admin() {
         <div className="card">
           <h3>Event settings</h3>
           <form onSubmit={saveCfg}>
+            <label>Event name<input type="text" value={cfg.name} onChange={(e) => setCfg({ ...cfg, name: e.target.value })} /></label>
+            <label>Resort / venue name<input type="text" value={cfg.resort_name} onChange={(e) => setCfg({ ...cfg, resort_name: e.target.value })} /></label>
+            <label>Registration opens<input type="datetime-local" value={cfg.opens_at} onChange={(e) => setCfg({ ...cfg, opens_at: e.target.value })} /></label>
+            <label>Registration closes<input type="datetime-local" value={cfg.closes_at} onChange={(e) => setCfg({ ...cfg, closes_at: e.target.value })} /></label>
             <label>Lodging $/night (cents)<input type="number" value={cfg.lodging_rate_per_night_cents} onChange={(e) => setCfg({ ...cfg, lodging_rate_per_night_cents: +e.target.value })} /></label>
             <label>Meal $/service (cents)<input type="number" value={cfg.meal_price_per_service_cents} onChange={(e) => setCfg({ ...cfg, meal_price_per_service_cents: +e.target.value })} /></label>
             <button type="submit">Save</button>
