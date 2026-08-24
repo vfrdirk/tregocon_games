@@ -25,6 +25,16 @@ export default function Lodging() {
     } catch (e) { setErr(e.message); }
   };
 
+  const deleteAccount = async () => {
+    if (!window.confirm('Delete your account? This permanently removes your profile, event selections, and uploaded photos. This cannot be undone.')) return;
+    try {
+      await api('/api/auth/me', { method: 'DELETE' });
+      await api('/api/auth/logout', { method: 'POST' });
+      onLogin && onLogin();
+      window.location.reload();
+    } catch (e) { setErr(e.message); }
+  };
+
   const load = async () => {
     const [av, my, me] = await Promise.all([api('/api/lodging/availability'), api('/api/lodging/my-reservation'), api('/api/auth/me')]);
     setData(av); setMine(my.reservation);
@@ -77,6 +87,8 @@ export default function Lodging() {
         <input placeholder="phone (for SMS notifications)" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
         <button type="submit">Save profile</button>
         {profileMsg && <p className="ok">{profileMsg}</p>}
+        <hr style={{ borderColor: 'var(--border)', margin: '1rem 0' }} />
+        <button type="button" className="del" style={{ color: 'var(--err)', border: '1px solid var(--err)', background: 'transparent' }} onClick={deleteAccount}>Delete my account</button>
       </form>
       {mine && (
         <div className="card">

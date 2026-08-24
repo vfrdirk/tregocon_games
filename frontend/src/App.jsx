@@ -8,6 +8,7 @@ import Games from './views/Games.jsx';
 import Announcements from './views/Announcements.jsx';
 import Photos from './views/Photos.jsx';
 import Admin from './views/Admin.jsx';
+import Privacy from './views/Privacy.jsx';
 
 function fmtDate(iso) {
   if (!iso) return null;
@@ -67,6 +68,9 @@ export default function App() {
         {status && status.event && <EventBanner ev={status.event} state={status.state} />}
         <Login onLogin={refreshMe} />
         <Register />
+        <p className="muted" style={{ textAlign: 'center' }}>
+          <a href="#" onClick={(e) => { e.preventDefault(); setView('privacy'); }}>Privacy Policy</a>
+        </p>
       </div>
     );
   }
@@ -97,6 +101,10 @@ export default function App() {
         {view === 'announcements' && <Announcements user={user} />}
         {view === 'photos' && <Photos user={user} />}
         {view === 'dashboard' && <Admin user={user} />}
+        {view === 'privacy' && <Privacy />}
+        <p className="muted" style={{ textAlign: 'center', marginTop: '1rem' }}>
+          <a href="#" onClick={(e) => { e.preventDefault(); setView('lodging'); }}>Privacy Policy</a>
+        </p>
       </main>
     </div>
   );

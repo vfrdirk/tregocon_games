@@ -15,7 +15,7 @@ from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
 
 from .db import get_db
-from .models import User, UserStatus, Session
+from .models import User, UserStatus, Session, Photo, Reservation, MealRSVP, GameSignup
 from .comms import comms, tpl_welcome_pending, tpl_approved
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
@@ -170,6 +170,35 @@ def update_me(payload: ProfileIn, user: User = Depends(get_current_user), db: DB
         user.password_hash = hash_pw(payload.password)
     db.commit()
     return {"status": "ok", "display_name": user.display_name, "phone": user.phone}
+
+
+UPLOAD_DIR = "/app/uploads"
+
+
+@router.delete("/me")
+def delete_me(user: User = Depends(get_current_user), db: DBSession = Depends(get_db), response: Response = None):
+    # Protect against locking everyone out: admins must be removed via the admin panel.
+    if user.status == UserStatus.admin:
+        raise HTTPException(status_code=400, detail="Admin accounts cannot self-delete. Remove via admin panel.")
+    uid = user.id
+    # Remove uploaded photo files + rows
+    photos = db.query(Photo).filter(Photo.uploaded_by == uid).all()
+    for p in photos:
+        try:
+            fname = p.url.split("/")[-1]
+            fp = os.path.join(UPLOAD_DIR, fname)
+            if os.path.exists(fp):
+                os.remove(fp)
+        except Exception as e:
+            logger.warning("failed to remove photo file for user %s: %s", uid, e)
+    db.query(Photo).filter(Photo.uploaded_by == uid).delete()
+    db.query(GameSignup).filter(GameSignup.user_id == uid).delete()
+    db.query(MealRSVP).filter(MealRSVP.user_id == uid).delete()
+    db.query(Reservation).filter(Reservation.user_id == uid).delete()
+    db.query(Session).filter(Session.user_id == uid).delete()
+    db.query(User).filter(User.id == uid).delete()
+    db.commit()
+    return {"status": "ok"}
 
 
 @router.get("/pending")
