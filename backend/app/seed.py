@@ -11,27 +11,29 @@ from .models import Event, Lodge, Room, MealOption, MEAL_SERVICES
 
 
 # Main Cabin layout (TregoCon at Edgewood). One lodge, three floors.
-# Upstairs: 6 rooms (2 doubles + 4 singles). Main floor: 2 doubles. Downstairs: 3 singles.
-# "double" = two beds (holds up to 2 people); "single" = queen (holds 1, or a couple).
-# Funny room names supplied later by the coordinator; floor-based labels used for now.
+# Upstairs: 6 rooms (2 doubles + 4 queens). Main floor: 2 doubles. Downstairs: 3 queens.
+# ALL rooms hold up to 2 people:
+#   - "double" = two beds (good for parent/child who don't share a bed, or two friends)
+#   - "single"/queen = one bed (a couple who share a bed)
+# Capacity is 2 for every room; bed_config only describes the bed layout.
 TEMPLATE_LODGES = [
     {"name": "Main Cabin", "floors": {
         "upstairs": [
             {"label": "Upstairs 1", "capacity": 2, "bed_config": "double"},
             {"label": "Upstairs 2", "capacity": 2, "bed_config": "double"},
-            {"label": "Upstairs 3", "capacity": 1, "bed_config": "single"},
-            {"label": "Upstairs 4", "capacity": 1, "bed_config": "single"},
-            {"label": "Upstairs 5", "capacity": 1, "bed_config": "single"},
-            {"label": "Upstairs 6", "capacity": 1, "bed_config": "single"},
+            {"label": "Upstairs 3", "capacity": 2, "bed_config": "single"},
+            {"label": "Upstairs 4", "capacity": 2, "bed_config": "single"},
+            {"label": "Upstairs 5", "capacity": 2, "bed_config": "single"},
+            {"label": "Upstairs 6", "capacity": 2, "bed_config": "single"},
         ],
         "main": [
             {"label": "Main 1", "capacity": 2, "bed_config": "double"},
             {"label": "Main 2", "capacity": 2, "bed_config": "double"},
         ],
         "down": [
-            {"label": "Down 1", "capacity": 1, "bed_config": "single"},
-            {"label": "Down 2", "capacity": 1, "bed_config": "single"},
-            {"label": "Down 3", "capacity": 1, "bed_config": "single"},
+            {"label": "Down 1", "capacity": 2, "bed_config": "single"},
+            {"label": "Down 2", "capacity": 2, "bed_config": "single"},
+            {"label": "Down 3", "capacity": 2, "bed_config": "single"},
         ],
     }},
 ]

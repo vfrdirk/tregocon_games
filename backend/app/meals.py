@@ -164,7 +164,8 @@ def meals_summary(user: User = Depends(get_current_user), db: DBSession = Depend
     out = []
     total_owed = 0
     for m in opts:
-        cnt = db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).count()
+        rows = db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).all()
+        cnt = sum(1 + len(json.loads(r.companions or "[]") or []) for r in rows)
         out.append({"service": m.service, "headcount": cnt, "price_cents": m.price, "collected_cents": cnt * m.price})
         total_owed += cnt * m.price
     return {"event": {"year": ev.year}, "services": out, "meal_total_owed_cents": total_owed}

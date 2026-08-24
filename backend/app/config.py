@@ -9,7 +9,7 @@ import json
 from datetime import datetime
 
 from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
-from fastapi.responses import FileResponse
+from fastapi.responses import FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 from sqlalchemy.orm import Session as DBSession
@@ -121,6 +121,54 @@ def list_photos(db: DBSession = Depends(get_db)):
                     "attendees": att_names, "games": g_titles,
                     "uploaded_by": p.uploaded_by, "created_at": p.created_at.isoformat() if p.created_at else None})
     return {"photos": out}
+
+
+@router.delete("/photos/{photo_id}")
+def delete_photo(photo_id: int, user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    p = db.query(Photo).filter(Photo.id == photo_id).first()
+    if not p:
+        raise HTTPException(status_code=404, detail="Photo not found")
+    # remove the file from the uploads volume
+    try:
+        fname = p.url.split("/")[-1]
+        path = os.path.join(UPLOAD_DIR, fname)
+        if os.path.exists(path):
+            os.remove(path)
+    except OSError:
+        pass
+    db.delete(p)
+    db.commit()
+    return {"status": "ok", "photo_id": photo_id}
+
+
+@router.get("/photos/export")
+def export_photos(ids: str = "", user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    """Download selected photos as a zip archive (any logged-in user)."""
+    import io, zipfile
+    id_list = [int(x) for x in ids.split(",") if x.strip().isdigit()]
+    if not id_list:
+        raise HTTPException(status_code=422, detail="No photo ids provided")
+    ev = active_event(db)
+    photos = db.query(Photo).filter(Photo.id.in_(id_list)).all() if ev else []
+    if ev:
+        photos = [p for p in photos if p.event_id == ev.id]
+    if not photos:
+        raise HTTPException(status_code=404, detail="No matching photos")
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as z:
+        for p in photos:
+            fname = p.url.split("/")[-1]
+            path = os.path.join(UPLOAD_DIR, fname)
+            if os.path.exists(path):
+                arcname = f"{p.id}_{fname}"
+                if p.caption:
+                    arcname = f"{p.id}_{p.caption[:40].replace('/', '_')}_{fname}"
+                z.write(path, arcname)
+    buf.seek(0)
+    return StreamingResponse(buf, media_type="application/zip",
+                             headers={"Content-Disposition": "attachment; filename=tregocon_photos.zip"})
 
 
 @router.get("/people")

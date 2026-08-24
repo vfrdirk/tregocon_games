@@ -21,7 +21,7 @@ from sqlalchemy.orm import Session as DBSession
 from .db import get_db
 from .models import (
     Event, Lodge, Room, User, UserStatus, Reservation,
-    CommitmentStatus, PaymentStatus, BedConfig,
+    CommitmentStatus, PaymentStatus, BedConfig, MealRSVP,
 )
 from .auth import get_current_user
 
@@ -169,12 +169,13 @@ def my_reservation(user: User = Depends(get_current_user), db: DBSession = Depen
         return {"reservation": None}
     room = db.query(Room).filter(Room.id == res.room_id).first()
     nights = mask_to_nights(res.nights_bitmask)
+    companions = get_companions(res)
     return {"reservation": {
         "room_id": res.room_id, "room_label": room.label if room else None,
         "nights": nights, "commitment": res.commitment_status.value,
         "payment": res.payment_status.value,
-        "companions": get_companions(res),
-        "cost_cents": len(nights) * ev.lodging_rate_per_night,
+        "companions": companions,
+        "cost_cents": len(nights) * ev.lodging_rate_per_night * (1 + len(companions)),
     }}
 
 
@@ -228,6 +229,8 @@ def cancel_reservation(user: User = Depends(get_current_user), db: DBSession = D
     if not res:
         raise HTTPException(status_code=404, detail="No reservation to cancel")
     db.delete(res)
+    # releasing a room also releases this user's meal selections (they're not attending)
+    db.query(MealRSVP).filter(MealRSVP.user_id == user.id).delete()
     db.commit()
     return {"status": "ok", "message": "Reservation released"}
 
