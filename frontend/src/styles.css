@@ -1,9 +1,13 @@
-:root { --bg:#1f2a44; --card:#27324f; --accent:#ffb454; --ok:#5ad17a; --err:#ff6b6b; --txt:#e8ecf5; }
+:root { --bg:#19223a; --card:#222d49; --accent:#ffb454; --ok:#5ad17a; --err:#ff6b6b; --txt:#e8ecf5; --muted:#9aa6c4; }
 * { box-sizing: border-box; }
 body { margin:0; font-family: system-ui, sans-serif; background:var(--bg); color:var(--txt); }
 .center { display:grid; place-items:center; height:100vh; }
-.authwrap { min-height:100vh; display:flex; gap:1rem; align-items:center; justify-content:center; padding:1rem; flex-wrap:wrap; }
-.app { min-height:100vh; }
+.authwrap { min-height:100vh; display:flex; flex-direction:column; gap:1.2rem; align-items:center; justify-content:center; padding:2rem 1rem; flex-wrap:wrap;
+  background: linear-gradient(rgba(12,18,32,.72), rgba(12,18,32,.82)), url('/edgewood-bg.jpg') center/cover no-repeat fixed; }
+.authwrap > * { width:100%; max-width:420px; }
+.authwrap form { background:rgba(34,45,73,.92); border:1px solid #2f3c5e; border-radius:14px; padding:1.25rem; box-shadow:0 6px 24px rgba(0,0,0,.45); backdrop-filter:blur(3px); }
+.event-banner { max-width:560px; }
+.app { min-height:100vh; background:radial-gradient(1200px 600px at 70% -10%, #233258 0%, var(--bg) 60%); }
 header { display:flex; align-items:center; gap:1rem; padding:.75rem 1rem; background:rgba(0,0,0,.25); flex-wrap:wrap; }
 header h1 { margin:0; font-size:1.3rem; color:var(--accent); }
 nav { display:flex; gap:.4rem; flex-wrap:wrap; }
@@ -11,7 +15,7 @@ nav button, .subnav button { background:transparent; color:var(--txt); border:1p
 nav button.active, .subnav button.active { background:var(--accent); color:#1f2a44; font-weight:600; }
 .who { margin-left:auto; display:flex; align-items:center; gap:.5rem; }
 main { padding:1rem; max-width:900px; margin:0 auto; }
-.card { background:var(--card); border-radius:10px; padding:1rem; margin:.75rem 0; }
+.card { background:var(--card); border:1px solid #2f3c5e; border-radius:12px; padding:1rem; margin:.75rem 0; box-shadow:0 4px 16px rgba(0,0,0,.3); }
 h2 { color:var(--accent); }
 button { background:var(--accent); color:#1f2a44; border:0; padding:.45rem .8rem; border-radius:6px; cursor:pointer; font-weight:600; }
 button:hover { filter:brightness(1.08); }
@@ -52,9 +56,12 @@ label { display:block; margin:.4rem 0; }
 @keyframes pulse { 50% { opacity:.4; } }
 .gdesc { font-size:.85rem; color:#c7d0e6; margin:.3rem 0; }
 .posted { color:#9aa6c4; font-size:.8rem; }
-.section { margin-top:1rem; }
-.section h3 { color:var(--accent); border-bottom:1px solid #36456b; padding-bottom:.2rem; }
+.section { margin-top:1.5rem; padding-top:1rem; border-top:2px solid #2a3654; }
+.section:first-of-type { border-top:none; }
+.section h3 { color:var(--accent); border-bottom:2px solid #36456b; padding-bottom:.35rem; font-size:1.25rem; letter-spacing:.3px; }
 .section.now h3 { color:var(--ok); border-color:var(--ok); }
+.section.done h3 { color:#9fb6d8; }
+.section.cancelled-section { border-top:1px dashed #3a2a2a; }
 .names { font-size:.82rem; margin:.15rem 0; }
 .names.in { color:#bfe3c0; }
 .names.maybe { color:#e3d9bf; }
@@ -98,13 +105,13 @@ button.accent { background:var(--accent); color:#0d1626; border-color:var(--acce
 .mealadmin input { font-weight:600; }
 .mealvol { margin:.4rem 0; }
 .mealvol ul { margin:.2rem 0; padding-left:1.1rem; }
-.event-banner { background:linear-gradient(135deg,#1f2c4d,#26406b); border:1px solid #34507f; border-radius:12px; padding:1rem 1.2rem; margin:1rem auto; max-width:520px; text-align:center; box-shadow:0 4px 18px rgba(0,0,0,.35); }
-.event-banner h2 { margin:0 0 .2rem; font-size:1.6rem; }
-.event-banner .resort { margin:0 0 .3rem; color:#9fb6d8; }
-.event-banner .dates { margin:.3rem 0; font-size:1.1rem; font-weight:600; }
-.event-banner .open { color:#7ee0a0; font-weight:600; }
-.event-banner .soon { color:#ffd479; }
-.event-banner .closed { color:#ff9a9a; }
+.event-banner { background:linear-gradient(135deg,rgba(31,44,77,.92),rgba(38,64,107,.92)); border:1px solid #34507f; border-radius:16px; padding:1.5rem 1.5rem; margin:0 auto; max-width:560px; text-align:center; box-shadow:0 6px 28px rgba(0,0,0,.5); backdrop-filter:blur(2px); }
+.event-banner h2 { margin:0 0 .3rem; font-size:2.4rem; letter-spacing:.5px; text-shadow:0 2px 8px rgba(0,0,0,.5); }
+.event-banner .resort { margin:0 0 .4rem; color:#bcd0ee; font-size:1.05rem; }
+.event-banner .dates { margin:.4rem 0; font-size:1.3rem; font-weight:700; color:#fff; }
+.event-banner .open { color:#7ee0a0; font-weight:600; font-size:1.05rem; }
+.event-banner .soon { color:#ffd479; font-size:1.05rem; }
+.event-banner .closed { color:#ff9a9a; font-size:1.05rem; }
 .event-dates { font-size:1.05rem; font-weight:600; margin:.1rem 0 .5rem; }
 
 /* ===== Mobile + visual polish ===== */

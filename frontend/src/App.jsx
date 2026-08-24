@@ -22,7 +22,7 @@ function EventBanner({ ev, state }) {
   const regClose = fmtDate(ev.closes_at);
   return (
     <div className="event-banner">
-      <h2>{ev.name}{ev.year ? ` ${ev.year}` : ''}</h2>
+      <h2>{ev.name}</h2>
       {ev.resort_name && <p className="resort">{ev.resort_name}</p>}
       {start && end && <p className="dates">📅 {start} – {end}</p>}
       {state === 'open' && <p className="open">Registration is open{regClose ? ` until ${regClose}` : ''}.</p>}
@@ -95,7 +95,7 @@ export default function App() {
         {view === 'meals' && <Meals user={user} />}
         {view === 'games' && <Games user={user} />}
         {view === 'announcements' && <Announcements user={user} />}
-        {view === 'photos' && <Photos />}
+        {view === 'photos' && <Photos user={user} />}
         {view === 'dashboard' && <Admin user={user} />}
       </main>
     </div>

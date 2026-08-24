@@ -118,7 +118,7 @@ export default function Games({ user }) {
 
   return (
     <div>
-      <h2>On-Deck Games</h2>
+      <h2>Game Board</h2>
       <p className="muted">Post a game; others click in. You're auto-joined when you post. Live board updates automatically.</p>
       <form className="card" onSubmit={post}>
         <input placeholder="Game title" value={title} onChange={(e) => setTitle(e.target.value)} />
@@ -135,7 +135,7 @@ export default function Games({ user }) {
         {open.map((g) => <Card key={g.id} g={g} />)}
         {open.length === 0 && <p className="muted">Nothing queued.</p>}
       </div></div>
-      {played.length > 0 && (<div className="section done"><h3>Played</h3><div className="games played">{played.map((g) => <Card key={g.id} g={g} />)}</div></div>)}
+      {played.length > 0 && (<div className="section done"><h3>✓ Completed</h3><div className="games played">{played.map((g) => <Card key={g.id} g={g} />)}</div></div>)}
       {cancelled.length > 0 && (
         <div className="section cancelled-section">
           <button className="collapse-toggle" onClick={() => setShowCancelled((v) => !v)}>
