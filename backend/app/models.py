@@ -196,6 +196,7 @@ class Photo(Base):
     event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
     url = Column(String, nullable=False)
     caption = Column(String)
+    lodge_id = Column(Integer, ForeignKey("lodges.id"), nullable=True)
 
 
 class Session(Base):
@@ -206,3 +207,12 @@ class Session(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     expires_at = Column(DateTime, nullable=True)
     user = relationship("User")
+
+
+class Announcement(Base):
+    __tablename__ = "announcements"
+    id = Column(Integer, primary_key=True)
+    event_id = Column(Integer, ForeignKey("events.id"), nullable=False)
+    author_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    body = Column(String, nullable=False)
+    created_at = Column(DateTime, default=datetime.utcnow)

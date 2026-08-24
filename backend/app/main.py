@@ -9,8 +9,9 @@ from . import lodging
 from . import events
 from . import meals
 from . import games
+from . import config
 
-app = FastAPI(title="TregoCon API", version="0.7.0")
+app = FastAPI(title="TregoCon API", version="0.8.0")
 
 app.add_middleware(
     CORSMiddleware,
@@ -28,6 +29,8 @@ app.include_router(events.admin_router)
 app.include_router(meals.router)
 app.include_router(meals.admin_router)
 app.include_router(games.router)
+app.include_router(config.router)
+config.mount_static(app)
 
 
 @app.on_event("startup")

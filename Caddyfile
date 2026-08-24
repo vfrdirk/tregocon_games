@@ -8,8 +8,10 @@
 :8080 {
     @api path /api/*
     @swagger path /docs /docs/* /openapi.json
+    @uploads path /uploads /uploads/*
     reverse_proxy @api 127.0.0.1:8000
     reverse_proxy @swagger 127.0.0.1:8000
+    reverse_proxy @uploads 127.0.0.1:8000
     # Frontend SPA (host networking, nginx on 8081) — default
     reverse_proxy 127.0.0.1:8081
 }
