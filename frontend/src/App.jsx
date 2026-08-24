@@ -9,6 +9,7 @@ import Announcements from './views/Announcements.jsx';
 import Photos from './views/Photos.jsx';
 import Admin from './views/Admin.jsx';
 import Privacy from './views/Privacy.jsx';
+import Account from './views/Account.jsx';
 
 function fmtDate(iso) {
   if (!iso) return null;
@@ -39,6 +40,7 @@ export default function App() {
   const [status, setStatus] = useState(null);
   const [loading, setLoading] = useState(true);
   const [view, setView] = useState('lodging');
+  const [accountOpen, setAccountOpen] = useState(false);
 
   const refreshMe = useCallback(async () => {
     try {
@@ -92,12 +94,13 @@ export default function App() {
           ))}
         </nav>
         <div className="who">
-          <span>{user.display_name}</span>
+          <button className="who-name" onClick={() => setAccountOpen((o) => !o)}>{user.display_name} ▾</button>
+          {accountOpen && <Account onLogin={refreshMe} />}
           <button onClick={logout}>Logout</button>
         </div>
       </header>
       <main>
-        {view === 'lodging' && <Lodging user={user} />}
+        {view === 'lodging' && <Lodging />}
         {view === 'meals' && <Meals user={user} />}
         {view === 'games' && <Games user={user} />}
         {view === 'announcements' && <Announcements user={user} />}

@@ -74,6 +74,7 @@ class RegisterIn(BaseModel):
     display_name: str
     password: str
     phone: str = None
+    sms_opt_in: bool = False  # explicit consent only; never default-on
 
 
 class ApproveIn(BaseModel):
@@ -106,6 +107,9 @@ def register(payload: RegisterIn, db: DBSession = Depends(get_db)):
         existing.password_hash = hash_pw(payload.password)
         if payload.phone is not None:
             existing.phone = payload.phone.strip() or None
+        # never auto-enable consent on re-registration; only honor explicit opt-in
+        if payload.sms_opt_in:
+            existing.sms_opt_in = True
         db.commit()
         return {"status": "updated", "message": "Account details updated. You can log in once approved."}
     user = User(
@@ -113,6 +117,7 @@ def register(payload: RegisterIn, db: DBSession = Depends(get_db)):
         display_name=payload.display_name,
         password_hash=hash_pw(payload.password),
         phone=(payload.phone.strip() if payload.phone else None),
+        sms_opt_in=bool(payload.sms_opt_in),  # only True if user explicitly checked
         status=UserStatus.pending,
     )
     db.add(user)
@@ -149,12 +154,13 @@ def logout(request: Request, response: Response, db: DBSession = Depends(get_db)
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
     return {"id": user.id, "email": user.email, "display_name": user.display_name,
-            "phone": user.phone, "role": user.status.value}
+            "phone": user.phone, "sms_opt_in": user.sms_opt_in, "role": user.status.value}
 
 
 class ProfileIn(BaseModel):
     display_name: str = None
     phone: str = None
+    sms_opt_in: bool = None
     password: str = None  # optional; set to change
 
 
@@ -164,12 +170,14 @@ def update_me(payload: ProfileIn, user: User = Depends(get_current_user), db: DB
         user.display_name = payload.display_name.strip() or user.display_name
     if payload.phone is not None:
         user.phone = payload.phone.strip() or None
+    if payload.sms_opt_in is not None:
+        user.sms_opt_in = bool(payload.sms_opt_in)
     if payload.password:
         if len(payload.password) < 8:
             raise HTTPException(status_code=422, detail="Password must be >= 8 chars")
         user.password_hash = hash_pw(payload.password)
     db.commit()
-    return {"status": "ok", "display_name": user.display_name, "phone": user.phone}
+    return {"status": "ok", "display_name": user.display_name, "phone": user.phone, "sms_opt_in": user.sms_opt_in}
 
 
 UPLOAD_DIR = "/app/uploads"

@@ -6,39 +6,17 @@ const LABEL = { thu: 'Thu', fri: 'Fri', sat: 'Sat' };
 const money = (c) => `$${(c / 100).toFixed(2)}`;
 const BED = (b) => (b === 'double' ? '2 beds' : 'queen');
 
-export default function Lodging({ user, onLogin }) {
+export default function Lodging() {
   const [data, setData] = useState(null);
   const [mine, setMine] = useState(null);
   const [sel, setSel] = useState({ room: null, nights: [] });
   const [companion, setCompanion] = useState('');
   const [msg, setMsg] = useState('');
   const [err, setErr] = useState('');
-  const [profile, setProfile] = useState({ display_name: user.display_name || '', phone: '' });
-  const [profileMsg, setProfileMsg] = useState('');
-
-  const saveProfile = async (e) => {
-    e.preventDefault(); setProfileMsg(''); setErr('');
-    try {
-      const r = await api('/api/auth/me', { method: 'PUT', body: { display_name: profile.display_name, phone: profile.phone } });
-      setProfile({ display_name: r.display_name, phone: r.phone || '' });
-      setProfileMsg('Profile saved');
-    } catch (e) { setErr(e.message); }
-  };
-
-  const deleteAccount = async () => {
-    if (!window.confirm('Delete your account? This permanently removes your profile, event selections, and uploaded photos. This cannot be undone.')) return;
-    try {
-      await api('/api/auth/me', { method: 'DELETE' });
-      await api('/api/auth/logout', { method: 'POST' });
-      onLogin && onLogin();
-      window.location.reload();
-    } catch (e) { setErr(e.message); }
-  };
 
   const load = async () => {
-    const [av, my, me] = await Promise.all([api('/api/lodging/availability'), api('/api/lodging/my-reservation'), api('/api/auth/me')]);
+    const [av, my] = await Promise.all([api('/api/lodging/availability'), api('/api/lodging/my-reservation')]);
     setData(av); setMine(my.reservation);
-    if (me && me.phone !== undefined) setProfile((p) => ({ ...p, phone: me.phone || '' }));
   };
   useEffect(() => { load().catch((e) => setErr(e.message)); }, []);
 
@@ -81,15 +59,6 @@ export default function Lodging({ user, onLogin }) {
         <p className="event-dates">📅 {data.event.event_start ? new Date(data.event.event_start).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '?'} – {data.event.event_end ? new Date(data.event.event_end).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '?'}</p>
       )}
       <p className="muted">{money(rate)} / person / night · no discounts · companions billed same as a person</p>
-      <form className="card" onSubmit={saveProfile}>
-        <h3>My account</h3>
-        <input placeholder="display name" value={profile.display_name} onChange={(e) => setProfile({ ...profile, display_name: e.target.value })} />
-        <input placeholder="phone (for SMS notifications)" value={profile.phone} onChange={(e) => setProfile({ ...profile, phone: e.target.value })} />
-        <button type="submit">Save profile</button>
-        {profileMsg && <p className="ok">{profileMsg}</p>}
-        <hr style={{ borderColor: 'var(--border)', margin: '1rem 0' }} />
-        <button type="button" className="del" style={{ color: 'var(--err)', border: '1px solid var(--err)', background: 'transparent' }} onClick={deleteAccount}>Delete my account</button>
-      </form>
       {mine && (
         <div className="card">
           <h3>Your room</h3>
