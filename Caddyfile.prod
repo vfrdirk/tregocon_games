@@ -1,0 +1,18 @@
+# Phase 1 (Lightsail) production Caddyfile.
+# Terminates TLS via Let's Encrypt (Caddy auto-provisions). Requires:
+#  - DNS A record for play.tregocon.games -> this instance's static IP
+#  - ports 80 + 443 open in the Lightsail firewall
+#  - a valid email for the ACME account (set in docker-compose.prod.yml env or here)
+{
+    email ${ACME_EMAIL}
+    # admin api off for safety on a public host
+    admin off
+}
+
+play.tregocon.games {
+    @api path /api/* /docs /docs/* /openapi.json
+    @uploads path /uploads /uploads/*
+    reverse_proxy @api backend:8000
+    reverse_proxy @uploads backend:8000
+    reverse_proxy frontend:8081
+}
