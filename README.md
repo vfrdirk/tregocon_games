@@ -26,3 +26,4 @@ docker compose up --build
 - [ ] M11 Deploy to Lightsail + play.tregocon.games
 
 Plan: see `/opt/data/.hermes/plans/2026-08-23_tabletop-lodging-app.md`
+Live at https://play.tregocon.games (Lightsail, TLS via Caddy/Let's Encrypt)
