@@ -11,7 +11,7 @@
 set -euo pipefail
 
 APP_DIR=/opt/tregocon
-REPO=https://github.com/peach/tregocon.git   # <-- update to your actual repo URL
+REPO=https://github.com/vfrdirk/tregocon_games.git
 
 echo "==> Installing Docker (if missing)"
 if ! command -v docker >/dev/null; then
