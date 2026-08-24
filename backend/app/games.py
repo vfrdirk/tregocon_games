@@ -41,6 +41,7 @@ class GameIn(BaseModel):
     scheduled_at: str = None  # ISO, for specific_time
     location_room_id: int = None
     description: str = None
+    max_players: int = None  # optional player cap
 
 
 class SignupIn(BaseModel):
@@ -56,6 +57,10 @@ def _serialize(ev_id, db, current_user_id=None):
         signups = db.query(GameSignup).filter(GameSignup.game_session_id == g.id).all()
         ins = [s for s in signups if s.interest == SignupInterest.in_]
         maybes = [s for s in signups if s.interest == SignupInterest.maybe]
+        in_names = [s.user.display_name for s in ins if s.user]
+        maybe_names = [s.user.display_name for s in maybes if s.user]
+        in_count = len(ins)
+        full = bool(g.max_players) and in_count >= g.max_players
         my = None
         if current_user_id:
             m = db.query(GameSignup).filter(
@@ -68,9 +73,11 @@ def _serialize(ev_id, db, current_user_id=None):
             "scheduled_at": g.scheduled_at.isoformat() if g.scheduled_at else None,
             "location": loc.label if loc else None, "description": g.description,
             "status": g.status.value, "proposed_by": g.proposed_by,
-            "in": [{"user_id": s.user_id} for s in ins],
-            "maybe": [{"user_id": s.user_id} for s in maybes],
-            "in_count": len(ins), "maybe_count": len(maybes),
+            "max_players": g.max_players,
+            "in": [{"user_id": s.user_id, "name": s.user.display_name if s.user else None} for s in ins],
+            "maybe": [{"user_id": s.user_id, "name": s.user.display_name if s.user else None} for s in maybes],
+            "in_names": in_names, "maybe_names": maybe_names,
+            "in_count": in_count, "maybe_count": len(maybes), "full": full,
             "my_interest": my,
         })
     return out
@@ -131,8 +138,11 @@ def create_game(payload: GameIn, user: User = Depends(get_current_user), db: DBS
     g = GameSession(
         event_id=ev.id, proposed_by=user.id, title=payload.title, time_box=tb,
         when_text=payload.when, scheduled_at=sched, location_room_id=payload.location_room_id,
-        description=payload.description, status=GameStatus.open)
+        description=payload.description, max_players=payload.max_players, status=GameStatus.open)
     db.add(g)
+    db.flush()
+    # poster implicitly wants to play -> auto-join as "in"
+    db.add(GameSignup(game_session_id=g.id, user_id=user.id, interest=SignupInterest.in_))
     db.commit()
     _notify()
     return {"status": "ok", "game_id": g.id}
@@ -148,6 +158,12 @@ def signup(game_id: int, payload: SignupIn, user: User = Depends(get_current_use
         interest = SignupInterest(payload.interest)
     except ValueError:
         raise HTTPException(status_code=422, detail="interest must be 'in' or 'maybe'")
+    # enforce player cap on "in" (poster/admin may exceed)
+    if interest == SignupInterest.in_ and g.max_players and user.id != g.proposed_by and user.status != UserStatus.admin:
+        in_count = db.query(GameSignup).filter(
+            GameSignup.game_session_id == game_id, GameSignup.interest == SignupInterest.in_).count()
+        if in_count >= g.max_players:
+            raise HTTPException(status_code=409, detail=f"Game is full ({g.max_players} players)")
     existing = db.query(GameSignup).filter(
         GameSignup.game_session_id == game_id, GameSignup.user_id == user.id).first()
     if existing:

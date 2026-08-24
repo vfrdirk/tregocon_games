@@ -55,7 +55,12 @@ label { display:block; margin:.4rem 0; }
 .section { margin-top:1rem; }
 .section h3 { color:var(--accent); border-bottom:1px solid #36456b; padding-bottom:.2rem; }
 .section.now h3 { color:var(--ok); border-color:var(--ok); }
-.games.played { gap:.4rem; }
+.names { font-size:.82rem; margin:.15rem 0; }
+.names.in { color:#bfe3c0; }
+.names.maybe { color:#e3d9bf; }
+.gcard.full { border-left-color:var(--err); }
+.gcard.full .ghead strong::after { content:' · FULL'; color:var(--err); font-size:.75rem; }
+button:disabled { opacity:.4; cursor:not-allowed; }
 .ghead { font-weight:600; } .tb,.loc { color:#9aa6c4; font-size:.85rem; margin-left:.3rem; }
 .gsign { display:flex; gap:1rem; margin:.4rem 0; font-size:.9rem; }
 .gacts { display:flex; gap:.3rem; flex-wrap:wrap; }

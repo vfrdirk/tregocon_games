@@ -184,6 +184,7 @@ class GameSession(Base):
     posted_at = Column(DateTime, default=datetime.utcnow)
     location_room_id = Column(Integer, ForeignKey("rooms.id"), nullable=True)
     description = Column(String, nullable=True)
+    max_players = Column(Integer, nullable=True)  # optional cap; null = unlimited
     status = Column(SAEnum(GameStatus), default=GameStatus.open)
     event = relationship("Event", back_populates="game_sessions")
     signups = relationship("GameSignup", back_populates="game_session", cascade="all, delete-orphan")
