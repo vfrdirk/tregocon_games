@@ -1,0 +1,10 @@
+{
+  "name": "TregoCon",
+  "short_name": "TregoCon",
+  "description": "Tabletop gaming weekend — lodging, meals & games",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1f2a44",
+  "theme_color": "#1f2a44",
+  "icons": []
+}
