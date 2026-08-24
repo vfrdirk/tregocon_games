@@ -50,11 +50,27 @@ export default function Games({ user }) {
 
   const Card = ({ g }) => {
     const isPlayed = g.status === 'played';
-    if (isPlayed) {
-      return (<div key={g.id} className="gcard status-played" title={g.title}><span className="gplayed">{g.title}</span></div>);
-    }
     const isPlaying = g.status === 'playing';
     const full = g.full;
+    const [expanded, setExpanded] = useState(false);
+    if (isPlayed) {
+      const count = g.in_count + g.maybe_count;
+      return (
+        <div className="gcard status-played" title={g.title}>
+          <span className="gplayed" onClick={() => setExpanded((v) => !v)} style={{ cursor: 'pointer' }}>
+            {g.title} {count > 0 && <span className="played-count">· {count} player{count === 1 ? '' : 's'}</span>}
+            <span className="expand-cue">{expanded ? ' ▾' : ' ▸'}</span>
+          </span>
+          {expanded && (
+            <div className="played-detail">
+              {g.in_names?.length > 0 && <div className="names in">▶ Played: {g.in_names.join(', ')}</div>}
+              {g.maybe_names?.length > 0 && <div className="names maybe">? Maybe: {g.maybe_names.join(', ')}</div>}
+              {count === 0 && <div className="muted">No players recorded</div>}
+            </div>
+          )}
+        </div>
+      );
+    }
     return (
       <div key={g.id} className={'gcard status-' + g.status + (isPlaying ? ' nowplaying' : '') + (full ? ' full' : '')}>
         <div className="ghead">

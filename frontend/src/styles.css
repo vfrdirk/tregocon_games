@@ -71,3 +71,6 @@ table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding
 .games.cancelled { gap:.4rem; opacity:.7; }
 .collapse-toggle { background:none; border:none; color:#9aa6c4; cursor:pointer; font-size:.95rem; padding:0; }
 .cancelled-section { margin-top:1rem; }
+.played-count { color:#9aa6c4; font-weight:400; font-size:.8rem; }
+.expand-cue { color:#9aa6c4; font-size:.75rem; }
+.played-detail { margin-top:.3rem; }
