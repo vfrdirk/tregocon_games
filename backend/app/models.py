@@ -128,6 +128,7 @@ class User(Base):
     display_name = Column(String, nullable=False)
     password_hash = Column(String, nullable=False)
     status = Column(SAEnum(UserStatus), default=UserStatus.pending)
+    phone = Column(String, nullable=True)  # optional; enables SMS notifications
     reset_token = Column(String)
     reset_token_expires = Column(DateTime)
     created_at = Column(DateTime, default=datetime.utcnow)

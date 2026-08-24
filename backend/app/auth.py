@@ -73,6 +73,7 @@ class RegisterIn(BaseModel):
     email: str
     display_name: str
     password: str
+    phone: str = None
 
 
 class ApproveIn(BaseModel):
@@ -103,12 +104,15 @@ def register(payload: RegisterIn, db: DBSession = Depends(get_db)):
         # re-registration: update credentials/details, keep current approval status
         existing.display_name = payload.display_name
         existing.password_hash = hash_pw(payload.password)
+        if payload.phone is not None:
+            existing.phone = payload.phone.strip() or None
         db.commit()
         return {"status": "updated", "message": "Account details updated. You can log in once approved."}
     user = User(
         email=payload.email,
         display_name=payload.display_name,
         password_hash=hash_pw(payload.password),
+        phone=(payload.phone.strip() if payload.phone else None),
         status=UserStatus.pending,
     )
     db.add(user)
@@ -145,7 +149,27 @@ def logout(request: Request, response: Response, db: DBSession = Depends(get_db)
 @router.get("/me")
 def me(user: User = Depends(get_current_user)):
     return {"id": user.id, "email": user.email, "display_name": user.display_name,
-            "role": user.status.value}
+            "phone": user.phone, "role": user.status.value}
+
+
+class ProfileIn(BaseModel):
+    display_name: str = None
+    phone: str = None
+    password: str = None  # optional; set to change
+
+
+@router.put("/me")
+def update_me(payload: ProfileIn, user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if payload.display_name is not None:
+        user.display_name = payload.display_name.strip() or user.display_name
+    if payload.phone is not None:
+        user.phone = payload.phone.strip() or None
+    if payload.password:
+        if len(payload.password) < 8:
+            raise HTTPException(status_code=422, detail="Password must be >= 8 chars")
+        user.password_hash = hash_pw(payload.password)
+    db.commit()
+    return {"status": "ok", "display_name": user.display_name, "phone": user.phone}
 
 
 @router.get("/pending")

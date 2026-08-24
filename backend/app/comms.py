@@ -16,23 +16,35 @@ logger = logging.getLogger("tregocon.comms")
 class EmailProvider:
     def __init__(self):
         self.name = "ses"
-        self.enabled = bool(os.environ.get("AWS_ACCESS_KEY_ID") or os.environ.get("AWS_DEFAULT_REGION"))
+        self.enabled = bool(os.environ.get("AWS_ACCESS_KEY_ID") and os.environ.get("AWS_SECRET_ACCESS_KEY"))
         self._client = None
 
     def _get_client(self):
         if self._client is None:
             import boto3
-            self._client = boto3.client("ses", region_name=os.environ.get("AWS_REGION", "us-east-1"))
+            self._client = boto3.client(
+                "ses",
+                region_name=os.environ.get("AWS_REGION", os.environ.get("SES_REGION", "us-east-1")),
+                aws_access_key_id=os.environ.get("AWS_ACCESS_KEY_ID"),
+                aws_secret_access_key=os.environ.get("AWS_SECRET_ACCESS_KEY"),
+            )
         return self._client
 
     def send(self, to: str, subject: str, body: str) -> bool:
         if not self.enabled:
             logger.info("[email:disabled] to=%s subj=%s body=%s", to, subject, body[:80])
             return False
+        from_email = os.environ.get("SES_FROM_EMAIL")
+        if not from_email:
+            logger.error("[email] SES_FROM_EMAIL not set; cannot send")
+            return False
         self._get_client().send_email(
-            Source=os.environ["SES_FROM_EMAIL"],
+            Source=from_email,
             Destination={"ToAddresses": [to]},
-            Message={"Subject": {"Data": subject}, "Body": {"Text": {"Data": body}}},
+            Message={
+                "Subject": {"Data": subject, "Charset": "UTF-8"},
+                "Body": {"Text": {"Data": body, "Charset": "UTF-8"}},
+            },
         )
         return True
 
@@ -53,8 +65,11 @@ class SmsProvider:
         if not self.enabled:
             logger.info("[sms:disabled] to=%s body=%s", to, body[:80])
             return False
-        self._get_client().messages.create(
-            to=to, from_=os.environ["TWILIO_FROM_NUMBER"], body=body)
+        from_number = os.environ.get("TWILIO_FROM_NUMBER")
+        if not from_number:
+            logger.error("[sms] TWILIO_FROM_NUMBER not set; cannot send")
+            return False
+        self._get_client().messages.create(to=to, from_=from_number, body=body)
         return True
 
 
