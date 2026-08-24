@@ -68,3 +68,6 @@ button:disabled { opacity:.4; cursor:not-allowed; }
 .ann { padding:.4rem 0; border-bottom:1px solid #36456b; }
 .subnav { display:flex; gap:.4rem; margin:.5rem 0; }
 table { width:100%; border-collapse:collapse; } th,td { text-align:left; padding:.4rem; border-bottom:1px solid #36456b; }
+.games.cancelled { gap:.4rem; opacity:.7; }
+.collapse-toggle { background:none; border:none; color:#9aa6c4; cursor:pointer; font-size:.95rem; padding:0; }
+.cancelled-section { margin-top:1rem; }

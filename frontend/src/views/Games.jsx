@@ -9,6 +9,7 @@ export default function Games({ user }) {
   const [title, setTitle] = useState('');
   const [when, setWhen] = useState('');
   const [maxPlayers, setMaxPlayers] = useState('');
+  const [showCancelled, setShowCancelled] = useState(false);
   const [err, setErr] = useState('');
   const esRef = useRef(null);
 
@@ -119,7 +120,14 @@ export default function Games({ user }) {
         {open.length === 0 && <p className="muted">Nothing queued.</p>}
       </div></div>
       {played.length > 0 && (<div className="section done"><h3>Played</h3><div className="games played">{played.map((g) => <Card key={g.id} g={g} />)}</div></div>)}
-      {cancelled.length > 0 && (<div className="section"><h3>Cancelled</h3><div className="games">{cancelled.map((g) => <Card key={g.id} g={g} />)}</div></div>)}
+      {cancelled.length > 0 && (
+        <div className="section cancelled-section">
+          <button className="collapse-toggle" onClick={() => setShowCancelled((v) => !v)}>
+            {showCancelled ? '▾' : '▸'} Cancelled ({cancelled.length})
+          </button>
+          {showCancelled && <div className="games cancelled">{cancelled.map((g) => <Card key={g.id} g={g} />)}</div>}
+        </div>
+      )}
     </div>
   );
 }
