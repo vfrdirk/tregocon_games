@@ -108,7 +108,9 @@ export default function App() {
         {view === 'dashboard' && <Admin user={user} />}
         {view === 'privacy' && <Privacy />}
         <p className="muted" style={{ textAlign: 'center', marginTop: '1rem' }}>
-          <a href="#" onClick={(e) => { e.preventDefault(); setView('lodging'); }}>Privacy Policy</a>
+          <a href="#" onClick={(e) => { e.preventDefault(); setView(view === 'privacy' ? 'lodging' : 'privacy'); }}>
+            {view === 'privacy' ? 'Back' : 'Privacy Policy'}
+          </a>
         </p>
       </main>
     </div>
