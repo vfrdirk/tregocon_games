@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session as DBSession
 from .db import get_db
 from .models import (
     Event, MealOption, MealRSVP, User, UserStatus,
-    Reservation, PaymentStatus,
+    Reservation, PaymentStatus, MEAL_SERVICES,
 )
 from .auth import get_current_user
 from .lodging import active_event  # reuse
@@ -29,6 +29,9 @@ def meal_list(db: DBSession = Depends(get_db)):
     if not ev:
         return {"event": None, "services": []}
     opts = db.query(MealOption).filter(MealOption.event_id == ev.id).all()
+    # Deterministic chronological order (avoids Postgres heap-order drift after UPDATE).
+    svc_index = {s: i for i, s in enumerate(MEAL_SERVICES)}
+    opts = sorted(opts, key=lambda m: svc_index.get(m.service, 99))
     out = []
     for m in opts:
         rows = db.query(MealRSVP).filter(MealRSVP.meal_option_id == m.id).all()
@@ -182,6 +185,8 @@ def meals_summary(user: User = Depends(get_current_user), db: DBSession = Depend
     if not ev:
         return {"event": None}
     opts = db.query(MealOption).filter(MealOption.event_id == ev.id).all()
+    svc_index = {s: i for i, s in enumerate(MEAL_SERVICES)}
+    opts = sorted(opts, key=lambda m: svc_index.get(m.service, 99))
     out = []
     total_owed = 0
     for m in opts:
