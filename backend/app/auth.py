@@ -96,11 +96,15 @@ class ResetConfirmIn(BaseModel):
 # ---------- routes ----------
 @router.post("/register")
 def register(payload: RegisterIn, db: DBSession = Depends(get_db)):
-    existing = db.query(User).filter(User.email == payload.email).first()
-    if existing:
-        raise HTTPException(status_code=409, detail="Email already registered")
     if len(payload.password) < 8:
         raise HTTPException(status_code=422, detail="Password must be >= 8 chars")
+    existing = db.query(User).filter(User.email == payload.email).first()
+    if existing:
+        # re-registration: update credentials/details, keep current approval status
+        existing.display_name = payload.display_name
+        existing.password_hash = hash_pw(payload.password)
+        db.commit()
+        return {"status": "updated", "message": "Account details updated. You can log in once approved."}
     user = User(
         email=payload.email,
         display_name=payload.display_name,

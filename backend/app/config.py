@@ -5,9 +5,10 @@ at /uploads/<filename>. (Object storage like S3 swaps in at Phase 1.)
 """
 import os
 import uuid
+import json
 from datetime import datetime
 
-from fastapi import APIRouter, Depends, HTTPException, UploadFile, File
+from fastapi import APIRouter, Depends, HTTPException, UploadFile, File, Form
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
@@ -15,7 +16,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from .db import get_db
 from .models import (
-    Event, User, UserStatus, Announcement, Photo,
+    Event, User, UserStatus, Announcement, Photo, GameSession, Reservation,
 )
 from .auth import get_current_user
 from .lodging import active_event
@@ -77,12 +78,11 @@ def get_event_config(db: DBSession = Depends(get_db)):
     }
 
 
-# ---------- photo upload (admin) ----------
-@router.post("/admin/photo")
-def upload_photo(file: UploadFile = File(...), caption: str = None,
-                 user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
-    if user.status != UserStatus.admin:
-        raise HTTPException(status_code=403, detail="Admin only")
+# ---------- photo upload (any logged-in user; tagged w/ attendees + games) ----------
+@router.post("/photos")
+async def upload_photo(file: UploadFile = File(...), caption: str = Form(None),
+                       attendees: str = Form("[]"), games: str = Form("[]"),
+                       user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
     ev = active_event(db)
     if not ev:
         raise HTTPException(status_code=404, detail="No active event")
@@ -92,9 +92,15 @@ def upload_photo(file: UploadFile = File(...), caption: str = None,
     fname = f"{uuid.uuid4().hex}.{ext}"
     path = os.path.join(UPLOAD_DIR, fname)
     with open(path, "wb") as f:
-        f.write(file.file.read())
+        f.write(await file.read())
     url = f"/uploads/{fname}"
-    db.add(Photo(event_id=ev.id, url=url, caption=caption))
+    try:
+        att = json.loads(attendees or "[]")
+        gid = json.loads(games or "[]")
+    except (ValueError, TypeError):
+        att, gid = [], []
+    db.add(Photo(event_id=ev.id, url=url, caption=caption, uploaded_by=user.id,
+                 attendee_ids=json.dumps(att), game_ids=json.dumps(gid)))
     db.commit()
     return {"status": "ok", "url": url}
 
@@ -104,8 +110,32 @@ def list_photos(db: DBSession = Depends(get_db)):
     ev = active_event(db)
     if not ev:
         return {"photos": []}
-    photos = db.query(Photo).filter(Photo.event_id == ev.id).all()
-    return {"photos": [{"id": p.id, "url": p.url, "caption": p.caption} for p in photos]}
+    photos = db.query(Photo).filter(Photo.event_id == ev.id).order_by(Photo.created_at.desc()).all()
+    out = []
+    for p in photos:
+        att_ids = json.loads(p.attendee_ids or "[]")
+        g_ids = json.loads(p.game_ids or "[]")
+        att_names = [u.display_name for u in db.query(User).filter(User.id.in_(att_ids)).all()] if att_ids else []
+        g_titles = [g.title for g in db.query(GameSession).filter(GameSession.id.in_(g_ids)).all()] if g_ids else []
+        out.append({"id": p.id, "url": p.url, "caption": p.caption,
+                    "attendees": att_names, "games": g_titles,
+                    "uploaded_by": p.uploaded_by, "created_at": p.created_at.isoformat() if p.created_at else None})
+    return {"photos": out}
+
+
+@router.get("/people")
+def list_people(db: DBSession = Depends(get_db)):
+    """Attendee picker for photo tagging (any logged-in user)."""
+    ev = active_event(db)
+    if not ev:
+        return {"people": []}
+    # everyone with a reservation for the event, plus admins
+    reserved = db.query(Reservation.user_id).filter(Reservation.event_id == ev.id).all()
+    ids = {r.user_id for r in reserved}
+    admins = db.query(User).filter(User.status == UserStatus.admin).all()
+    ids.update({a.id for a in admins})
+    users = db.query(User).filter(User.id.in_(ids)).order_by(User.display_name).all() if ids else []
+    return {"people": [{"id": u.id, "name": u.display_name} for u in users]}
 
 
 # ---------- admin user management ----------

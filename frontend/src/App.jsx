@@ -6,6 +6,7 @@ import Lodging from './views/Lodging.jsx';
 import Meals from './views/Meals.jsx';
 import Games from './views/Games.jsx';
 import Announcements from './views/Announcements.jsx';
+import Photos from './views/Photos.jsx';
 import Admin from './views/Admin.jsx';
 
 export default function App() {
@@ -40,7 +41,7 @@ export default function App() {
     );
   }
 
-  const nav = ['lodging', 'meals', 'games', 'announcements'];
+  const nav = ['lodging', 'meals', 'games', 'photos', 'announcements'];
   if (user.role === 'admin') nav.push('dashboard');
 
   return (
@@ -64,6 +65,7 @@ export default function App() {
         {view === 'meals' && <Meals user={user} />}
         {view === 'games' && <Games user={user} />}
         {view === 'announcements' && <Announcements user={user} />}
+        {view === 'photos' && <Photos />}
         {view === 'dashboard' && <Admin user={user} />}
       </main>
     </div>

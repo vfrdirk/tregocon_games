@@ -208,6 +208,11 @@ class Photo(Base):
     url = Column(String, nullable=False)
     caption = Column(String)
     lodge_id = Column(Integer, ForeignKey("lodges.id"), nullable=True)
+    uploaded_by = Column(Integer, ForeignKey("users.id"), nullable=True)
+    # tagged attendees (user ids) and related games (game_session ids), stored as JSON
+    attendee_ids = Column(String, default="[]")
+    game_ids = Column(String, default="[]")
+    created_at = Column(DateTime, default=datetime.utcnow)
 
 
 class Session(Base):
