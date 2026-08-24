@@ -5,6 +5,7 @@ latest Event's lodges/rooms/meal-option services forward. History is
 preserved (old Event stays); writes are gated by registration window.
 """
 from datetime import datetime
+import os
 
 from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
@@ -16,6 +17,8 @@ from .models import (
     MealOption, MealRSVP, PaymentStatus,
 )
 from .auth import get_current_user
+from .lodging import active_event
+from .comms import comms, tpl_event_open
 
 router = APIRouter(prefix="/api/event", tags=["event"])
 admin_router = APIRouter(prefix="/api/admin", tags=["admin-event"])
@@ -92,6 +95,32 @@ def create_next_event(payload: CreateNextIn, user: User = Depends(get_current_us
     db.commit()
     return {"status": "ok", "event_id": ev.id, "year": ev.year,
             "message": f"Created {ev.name} by copying {src.year}'s template."}
+
+
+# ---------- admin dashboard summary ----------
+@admin_router.post("/event/notify-open")
+def notify_open(user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    ev = latest_event(db)
+    if not ev:
+        raise HTTPException(status_code=404, detail="No active event")
+    if registration_state(ev) != "open":
+        raise HTTPException(status_code=400, detail="Event is not open; cannot notify")
+    url = os.environ.get("PUBLIC_URL", "http://localhost:8080")
+    subj, body = tpl_event_open(ev.name, url)
+    sent = 0
+    for u in db.query(User).filter(User.status.in_([UserStatus.approved, UserStatus.admin])).all():
+        if comms.send_email(u.email, subj, body):
+            sent += 1
+    return {"status": "ok", "notified": sent, "email_enabled": comms.email.enabled}
+
+
+@admin_router.get("/event/comms-status")
+def comms_status(user: User = Depends(get_current_user), db: DBSession = Depends(get_db)):
+    if user.status != UserStatus.admin:
+        raise HTTPException(status_code=403, detail="Admin only")
+    return {"email_enabled": comms.email.enabled, "sms_enabled": comms.sms.enabled}
 
 
 # ---------- admin dashboard summary ----------

@@ -1,14 +1,12 @@
 """Auth: registration, admin approval, login (DB-backed sessions), password reset.
 
-Email is stubbed (logged) until SES is wired in Phase 1. Sessions are
-server-side DB rows keyed by a random token in an httpOnly cookie, so
-logout/revoke are real (delete the row).
+Sessions are server-side DB rows keyed by a random token in an httpOnly
+cookie, so logout/revoke are real (delete the row). Email/SMS go through
+app.comms (AWS SES / Twilio); if creds are absent they're logged, not sent.
 """
 import os
 import secrets
-import smtplib
 from datetime import datetime, timedelta
-from email.message import EmailMessage
 
 import bcrypt
 from fastapi import APIRouter, Depends, HTTPException, Request, Response, Form
@@ -18,6 +16,7 @@ from sqlalchemy.orm import Session as DBSession
 
 from .db import get_db
 from .models import User, UserStatus, Session
+from .comms import comms, tpl_welcome_pending, tpl_approved
 
 router = APIRouter(prefix="/api/auth", tags=["auth"])
 
@@ -57,9 +56,16 @@ def get_current_user(request: Request, db: DBSession = Depends(get_db)) -> User:
     return user
 
 
-def _send_email(to: str, subject: str, body: str):
-    # STUB until SES (Phase 1). Logs intent; no real send.
-    print(f"[email stub] to={to} subject={subject}\n{body}")
+def _notify_register(user: User):
+    subj, body = tpl_welcome_pending(user.display_name)
+    comms.send_email(user.email, subj, body)
+    comms.send_email(ADMIN_EMAIL, "New TregoCon registration pending approval",
+                     f"{user.display_name} ({user.email}) requested an account. Approve in the admin portal.")
+
+
+def _notify_approved(user: User, event_name: str):
+    subj, body = tpl_approved(user.display_name, event_name)
+    comms.send_email(user.email, subj, body)
 
 
 # ---------- schemas ----------
@@ -103,10 +109,7 @@ def register(payload: RegisterIn, db: DBSession = Depends(get_db)):
     )
     db.add(user)
     db.commit()
-    _send_email(user.email, "TregoCon registration received",
-                "Thanks! An admin will approve your account before you can log in.")
-    _send_email(ADMIN_EMAIL, "New TregoCon registration pending approval",
-                f"{user.display_name} ({user.email}) requested an account. Approve in the admin portal.")
+    _notify_register(user)
     return {"status": "pending", "message": "Registration received; awaiting admin approval."}
 
 
@@ -157,8 +160,9 @@ def approve(payload: ApproveIn, user: User = Depends(get_current_user), db: DBSe
         raise HTTPException(status_code=404, detail="User not found")
     target.status = UserStatus.approved
     db.commit()
-    _send_email(target.email, "Your TregoCon account is approved",
-                "You can now log in at the event site.")
+    from .lodging import active_event
+    ev = active_event(db)
+    _notify_approved(target, ev.name if ev else "TregoCon")
     return {"status": "ok", "approved": target.email}
 
 
@@ -172,6 +176,8 @@ def reset_request(payload: ResetRequestIn, db: DBSession = Depends(get_db)):
         db.commit()
         _send_email(user.email, "TregoCon password reset",
                     f"Reset link token: {tok}  (valid 1 hour)")
+        comms.send_email(user.email, "TregoCon password reset",
+                         f"Reset link token: {tok}  (valid 1 hour)")
     # Always return ok to avoid account enumeration.
     return {"status": "ok", "message": "If that email exists, a reset link was sent."}
 
